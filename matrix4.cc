@@ -7,44 +7,76 @@ namespace mygl
         return vector3(b_ * v.c_ - c_ * v.b_, c_ * v.a_ - a_ * v.c_,
                        a_ * v.b_ - b_ * v.a_);
     }
+
+    float vector3::operator*(const vector3& v) const
+    {
+        return a_ * v.a_ + b_ * v.b_ + c_ * v.c_;
+    }
+
     void vector3::normalize()
     {
-        a_ /= std::sqrt(a_ * a_ + b_ * b_ + c_ * c_);
-        b_ /= std::sqrt(a_ * a_ + b_ * b_ + c_ * c_);
-        c_ /= std::sqrt(a_ * a_ + b_ * b_ + c_ * c_);
+        auto norm = std::sqrt(a_ * a_ + b_ * b_ + c_ * c_);
+        a_ /= norm;
+        b_ /= norm;
+        c_ /= norm;
     }
 
-    matrix4::matrix4(std::vector<std::vector<GLfloat>> content)
+    matrix4::matrix4()
     {
-        content_.insert(content_.begin(), content.begin(), content.end());
+        content_ = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
     }
+
+    matrix4::matrix4(GLfloat a, GLfloat b, GLfloat c, GLfloat d, GLfloat e,
+                     GLfloat f, GLfloat g, GLfloat h, GLfloat i, GLfloat j,
+                     GLfloat k, GLfloat l, GLfloat m, GLfloat n, GLfloat o,
+                     GLfloat p)
+    {
+        content_ = { a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p };
+    }
+
+    matrix4::matrix4(std::array<GLfloat, 16> arr)
+    {
+        content_ = arr;
+    }
+
+    // Stockage column-major : content_[col * 4 + row]
+    GLfloat matrix4::operator()(size_t row, size_t col) const
+    {
+        return content_[col * 4 + row];
+    }
+    GLfloat& matrix4::operator()(size_t row, size_t col)
+    {
+        return content_[col * 4 + row];
+    }
+
     matrix4 matrix4::identity()
     {
-        std::vector<std::vector<GLfloat>> v = { { 1.0, 0.0, 0.0, 0.0 },
-                                                { 0.0, 1.0, 0.0, 0.0 },
-                                                { 0.0, 0.0, 1.0, 0.0 },
-                                                { 0.0, 0.0, 0.0, 1.0 } };
-
-        matrix4 mt(v);
-        return mt;
+        matrix4 m;
+        m(0, 0) = 1.0f;
+        m(1, 1) = 1.0f;
+        m(2, 2) = 1.0f;
+        m(3, 3) = 1.0f;
+        return m;
     }
+
     void matrix4::operator*=(const matrix4& rhs)
     {
-        std::vector<std::vector<GLfloat>> res(4, std::vector<GLfloat>(4, 0.0f));
-        for (int i = 0; i < 4; i++)
+        std::array<GLfloat, 16> res{};
+        for (size_t i = 0; i < 4; ++i)
         {
-            for (int j = 0; j < 4; j++)
+            for (size_t j = 0; j < 4; ++j)
             {
-                res[i][j] = 0;
-                for (int k = 0; k < 4; k++)
+                GLfloat sum = 0.0f;
+                for (size_t k = 0; k < 4; ++k)
                 {
-                    res[i][j] += content_[i][k] * rhs.content_[k][j];
+                    sum += (*this)(i, k) * rhs(k, j);
                 }
+                res[j * 4 + i] = sum;
             }
         }
-
-        content_ = std::move(res);
+        content_ = res;
     }
+
     matrix4 look_at(const GLfloat& eyeX, const GLfloat& eyeY,
                     const GLfloat& eyeZ, const GLfloat& centerX,
                     const GLfloat& centerY, const GLfloat& centerZ,
@@ -53,37 +85,63 @@ namespace mygl
         vector3 F(centerX - eyeX, centerY - eyeY, centerZ - eyeZ);
         vector3 UP(upX, upY, upZ);
 
-        UP.normalize();
         F.normalize();
+        UP.normalize();
 
+        vector3 eye(eyeX, eyeY, eyeZ);
         vector3 s = F ^ UP;
         s.normalize();
         vector3 u = s ^ F;
+        u.normalize();
 
-        std::vector<std::vector<GLfloat>> m = { { s.a_, s.b_, s.c_, 0.0f },
-                                                { u.a_, u.b_, u.c_, 0.0f },
-                                                { -F.a_, F.b_, F.c_, 0.0f },
-                                                { 0.0f, 0.0f, 0.0f, 1.0f } };
-        matrix4 M(m);
+        matrix4 M;
+        M(0, 0) = s.a_;
+        M(0, 1) = s.b_;
+        M(0, 2) = s.c_;
+        M(0, 3) = -(s * eye);
+        M(1, 0) = u.a_;
+        M(1, 1) = u.b_;
+        M(1, 2) = u.c_;
+        M(1, 3) = -(u * eye);
+        M(2, 0) = -F.a_;
+        M(2, 1) = -F.b_;
+        M(2, 2) = -F.c_;
+        M(2, 3) = (F * eye);
+        M(3, 0) = 0.0f;
+        M(3, 1) = 0.0f;
+        M(3, 2) = 0.0f;
+        M(3, 3) = 1.0f;
         return M;
     }
+
     matrix4 frustum(const GLfloat& left, const GLfloat& right,
                     const GLfloat& bottom, const GLfloat& top,
                     const GLfloat& nearVal, const GLfloat& farVal)
     {
-        GLfloat a = 2 * nearVal / (right - left);
+        GLfloat a = 2.0f * nearVal / (right - left);
         GLfloat c = (right + left) / (right - left);
-        GLfloat f = 2 * nearVal / (top - bottom);
+        GLfloat f = 2.0f * nearVal / (top - bottom);
         GLfloat g = (top + bottom) / (top - bottom);
-        GLfloat k = -1 * (farVal + nearVal) / (farVal - nearVal);
-        GLfloat l = -1 * (2 * farVal * nearVal) / (farVal - nearVal);
+        GLfloat k = -(farVal + nearVal) / (farVal - nearVal);
+        GLfloat l = -(2.0f * farVal * nearVal) / (farVal - nearVal);
 
-        std::vector<std::vector<GLfloat>> v = { { a, 0.0f, c, 0.0f },
-                                                { 0.0f, f, g, 0.0f },
-                                                { 0.0f, 0.0f, k, l },
-                                                { 0.0f, 0.0f, -1.0f, 0.0f } };
-
-        matrix4 M(v);
+        matrix4 M;
+        M(0, 0) = a;
+        M(0, 1) = 0.0f;
+        M(0, 2) = c;
+        M(0, 3) = 0.0f;
+        M(1, 0) = 0.0f;
+        M(1, 1) = f;
+        M(1, 2) = g;
+        M(1, 3) = 0.0f;
+        M(2, 0) = 0.0f;
+        M(2, 1) = 0.0f;
+        M(2, 2) = k;
+        M(2, 3) = l;
+        M(3, 0) = 0.0f;
+        M(3, 1) = 0.0f;
+        M(3, 2) = -1.0f;
+        M(3, 3) = 0.0f;
         return M;
     }
 
@@ -91,15 +149,13 @@ namespace mygl
 
 std::ostream& operator<<(std::ostream& out, const mygl::matrix4& m)
 {
-    for (int i = 0; i < 4; i++)
+    for (size_t i = 0; i < 4; ++i) // row
     {
-        for (int j = 0; j < 4; j++)
+        for (size_t j = 0; j < 4; ++j) // col
         {
-            out << m.content_[i][j] << " ";
+            out << m(i, j) << " ";
         }
         out << std::endl;
     }
-
     return out;
 }
-
