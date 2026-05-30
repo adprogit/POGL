@@ -1,8 +1,10 @@
 #pragma once
 
+
+#include <GL/glew.h>
 #include <GL/freeglut.h>
 #include <GL/gl.h>
-#include <GL/glew.h>
+
 #include <algorithm>
 #include <array>
 #include <cmath>
@@ -31,6 +33,7 @@ namespace mygl
     class matrix4
     {
     public:
+        matrix4 inverse() const;
         matrix4();
         matrix4(GLfloat a, GLfloat b, GLfloat c, GLfloat d, GLfloat e,
                 GLfloat f, GLfloat g, GLfloat h, GLfloat i, GLfloat j,
@@ -38,6 +41,7 @@ namespace mygl
                 GLfloat p);
         matrix4(std::array<GLfloat, 16> arr);
         void operator*=(const matrix4& rhs);
+        matrix4 operator*(const matrix4& rhs) const;
         static matrix4 identity();
         GLfloat operator()(size_t row, size_t col) const;
         GLfloat& operator()(size_t row, size_t col);
@@ -45,6 +49,7 @@ namespace mygl
         {
             return content_.data();
         }
+
 
         friend std::ostream& operator<<(std::ostream& out, const matrix4& m);
 
@@ -60,6 +65,9 @@ namespace mygl
     matrix4 frustum(const GLfloat& left, const GLfloat& right,
                     const GLfloat& bottom, const GLfloat& top,
                     const GLfloat& nearVal, const GLfloat& farVal);
+
+    matrix4 translate(GLfloat tx, GLfloat ty, GLfloat tz);
+	matrix4 scale(GLfloat sx, GLfloat sy, GLfloat sz);
 
     std::ostream& operator<<(std::ostream& out, const matrix4& m);
 

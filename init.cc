@@ -1,19 +1,20 @@
 #include "init.hh"
 
-bool init_glut(int &argc,char* argv [] ) {
-    glutInit(&argc ,argv);
-    glutInitContextVersion(4,1);
+bool init_glut(int& argc, char* argv[])
+{
+    glutInit(&argc, argv);
+    glutInitContextVersion(4, 1);
     glutInitContextProfile(GLUT_CORE_PROFILE);
-    glutInitDisplayMode(GLUT_RGBA|GLUT_DOUBLE|GLUT_DEPTH);
-    glutInitWindowSize(1024 ,1024);
-    glutInitWindowPosition( 10 ,10 );
-    glutCreateWindow(" Test OpenGL − POGL" );
+    glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE | GLUT_DEPTH);
+    glutInitWindowSize(1024, 1024);
+    glutInitWindowPosition(10, 10);
+    glutCreateWindow(" Test OpenGL − POGL");
     return true;
 }
 
 bool init_glew()
 {
-    return (glewInit()==GLEW_OK);
+    return (glewInit() == GLEW_OK);
 }
 
 bool init_gl()

@@ -1,0 +1,21 @@
+#version 410
+
+in vec3 position;
+in vec3 normalFlat;
+in vec2 uv;
+
+out vec2 uv_;
+out vec3 frag_position;   // espace camera
+out vec3 frag_normal;     // espace camera
+
+uniform mat4 model_view_matrix;
+uniform mat4 projection_matrix;
+
+void main()
+{
+    uv_ = uv;
+    frag_position = (model_view_matrix * vec4(position, 1.0)).xyz;
+    // normale en espace camera. mat3(MV) suffit si pas de scale non-uniforme
+    frag_normal = mat3(model_view_matrix) * normalFlat;
+    gl_Position = projection_matrix * model_view_matrix * vec4(position, 1.0);
+}

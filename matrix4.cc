@@ -77,6 +77,24 @@ namespace mygl
         content_ = res;
     }
 
+    matrix4 matrix4::operator*(const matrix4& rhs) const
+    {
+        matrix4 res;
+        for (size_t i = 0; i < 4; ++i)
+        {
+            for (size_t j = 0; j < 4; ++j)
+            {
+                GLfloat sum = 0.0f;
+                for (size_t k = 0; k < 4; ++k)
+                {
+                    sum += (*this)(i, k) * rhs(k, j);
+                }
+                res(i, j) = sum;
+            }
+        }
+        return res;
+    }
+
     matrix4 look_at(const GLfloat& eyeX, const GLfloat& eyeY,
                     const GLfloat& eyeZ, const GLfloat& centerX,
                     const GLfloat& centerY, const GLfloat& centerZ,
@@ -143,6 +161,96 @@ namespace mygl
         M(3, 2) = -1.0f;
         M(3, 3) = 0.0f;
         return M;
+    }
+    matrix4 translate(GLfloat tx, GLfloat ty, GLfloat tz)
+    {
+        matrix4 M = matrix4::identity();
+        M(0, 3) = tx;
+        M(1, 3) = ty;
+        M(2, 3) = tz;
+        return M;
+    }
+
+    matrix4 scale(GLfloat sx, GLfloat sy, GLfloat sz)
+    {
+        matrix4 M;
+        M(0, 0) = sx;
+        M(1, 1) = sy;
+        M(2, 2) = sz;
+        M(3, 3) = 1.0f;
+        return M;
+    }
+    matrix4 matrix4::inverse() const
+    {
+        const GLfloat* m = content_.data();
+        GLfloat inv[16];
+
+        inv[0] = m[5] * m[10] * m[15] - m[5] * m[11] * m[14]
+            - m[9] * m[6] * m[15] + m[9] * m[7] * m[14] + m[13] * m[6] * m[11]
+            - m[13] * m[7] * m[10];
+        inv[4] = -m[4] * m[10] * m[15] + m[4] * m[11] * m[14]
+            + m[8] * m[6] * m[15] - m[8] * m[7] * m[14] - m[12] * m[6] * m[11]
+            + m[12] * m[7] * m[10];
+        inv[8] = m[4] * m[9] * m[15] - m[4] * m[11] * m[13]
+            - m[8] * m[5] * m[15] + m[8] * m[7] * m[13] + m[12] * m[5] * m[11]
+            - m[12] * m[7] * m[9];
+        inv[12] = -m[4] * m[9] * m[14] + m[4] * m[10] * m[13]
+            + m[8] * m[5] * m[14] - m[8] * m[6] * m[13] - m[12] * m[5] * m[10]
+            + m[12] * m[6] * m[9];
+
+        inv[1] = -m[1] * m[10] * m[15] + m[1] * m[11] * m[14]
+            + m[9] * m[2] * m[15] - m[9] * m[3] * m[14] - m[13] * m[2] * m[11]
+            + m[13] * m[3] * m[10];
+        inv[5] = m[0] * m[10] * m[15] - m[0] * m[11] * m[14]
+            - m[8] * m[2] * m[15] + m[8] * m[3] * m[14] + m[12] * m[2] * m[11]
+            - m[12] * m[3] * m[10];
+        inv[9] = -m[0] * m[9] * m[15] + m[0] * m[11] * m[13]
+            + m[8] * m[1] * m[15] - m[8] * m[3] * m[13] - m[12] * m[1] * m[11]
+            + m[12] * m[3] * m[9];
+        inv[13] = m[0] * m[9] * m[14] - m[0] * m[10] * m[13]
+            - m[8] * m[1] * m[14] + m[8] * m[2] * m[13] + m[12] * m[1] * m[10]
+            - m[12] * m[2] * m[9];
+
+        inv[2] = m[1] * m[6] * m[15] - m[1] * m[7] * m[14] - m[5] * m[2] * m[15]
+            + m[5] * m[3] * m[14] + m[13] * m[2] * m[7] - m[13] * m[3] * m[6];
+        inv[6] = -m[0] * m[6] * m[15] + m[0] * m[7] * m[14]
+            + m[4] * m[2] * m[15] - m[4] * m[3] * m[14] - m[12] * m[2] * m[7]
+            + m[12] * m[3] * m[6];
+        inv[10] = m[0] * m[5] * m[15] - m[0] * m[7] * m[13]
+            - m[4] * m[1] * m[15] + m[4] * m[3] * m[13] + m[12] * m[1] * m[7]
+            - m[12] * m[3] * m[5];
+        inv[14] = -m[0] * m[5] * m[14] + m[0] * m[6] * m[13]
+            + m[4] * m[1] * m[14] - m[4] * m[2] * m[13] - m[12] * m[1] * m[6]
+            + m[12] * m[2] * m[5];
+
+        inv[3] = -m[1] * m[6] * m[11] + m[1] * m[7] * m[10]
+            + m[5] * m[2] * m[11] - m[5] * m[3] * m[10] - m[9] * m[2] * m[7]
+            + m[9] * m[3] * m[6];
+        inv[7] = m[0] * m[6] * m[11] - m[0] * m[7] * m[10] - m[4] * m[2] * m[11]
+            + m[4] * m[3] * m[10] + m[8] * m[2] * m[7] - m[8] * m[3] * m[6];
+        inv[11] = -m[0] * m[5] * m[11] + m[0] * m[7] * m[9]
+            + m[4] * m[1] * m[11] - m[4] * m[3] * m[9] - m[8] * m[1] * m[7]
+            + m[8] * m[3] * m[5];
+        inv[15] = m[0] * m[5] * m[10] - m[0] * m[6] * m[9] - m[4] * m[1] * m[10]
+            + m[4] * m[2] * m[9] + m[8] * m[1] * m[6] - m[8] * m[2] * m[5];
+
+        GLfloat det =
+            m[0] * inv[0] + m[1] * inv[4] + m[2] * inv[8] + m[3] * inv[12];
+        if (det == 0.0f)
+        {
+            return matrix4::identity();
+        }
+
+        GLfloat inv_det = 1.0f / det;
+        matrix4 result;
+        for (int c = 0; c < 4; c++)
+        {
+            for (int r = 0; r < 4; r++)
+            {
+                result(r, c) = inv[c * 4 + r] * inv_det;
+            }
+        }
+        return result;
     }
 
 } // namespace mygl

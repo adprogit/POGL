@@ -1,0 +1,8 @@
+#version 410
+out vec2 ndc;
+void main() {
+    vec2 pos = vec2((gl_VertexID == 1) ? 3.0 : -1.0,
+                    (gl_VertexID == 2) ? 3.0 : -1.0);
+    ndc = pos;
+    gl_Position = vec4(pos, 0.0, 1.0);
+}

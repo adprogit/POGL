@@ -1,5 +1,8 @@
 #include "shaders.hh"
 
+#include "img/image.hh"
+#include "img/image_io.hh"
+
 program::program()
 {
     prog_id_ = 0;
@@ -85,8 +88,8 @@ program program::make_program(const std::string& vertex_shader_src,
     glAttachShader(prog_id, vertex_shader);
 
     glLinkProgram(prog_id);
-
     GLint program_linked;
+
     glGetProgramiv(prog_id, GL_LINK_STATUS, &program_linked);
     if (program_linked != GL_TRUE)
     {
@@ -140,16 +143,15 @@ std::string readFile(const std::string& path)
     return buffer.str();
 }
 
-program init_shaders()
+program init_shaders(const std::string& vertex_shader_path,
+                     const std::string& fragment_shader_path)
 {
     std::string vrtx_buffr;
     std::string frgmnt_buffr;
     try
     {
-        vrtx_buffr =
-            readFile("/home/ad/image/OPENGL/TP/pogl_skel_tp/tp2/vertex.shd");
-        frgmnt_buffr =
-            readFile("/home/ad/image/OPENGL/TP/pogl_skel_tp/tp2/fragment.shd");
+        vrtx_buffr = readFile(vertex_shader_path);
+        frgmnt_buffr = readFile(fragment_shader_path);
     }
     catch (...)
     {
@@ -168,11 +170,10 @@ program init_shaders()
     return p;
 }
 
-void program::init_object()
+void program::init_object(const std::vector<GLfloat>& vertices,
+                          const std::vector<GLfloat>& normals_flat,
+                          const std::vector<GLfloat>& uv)
 {
-    GLfloat vertices[] = { -0.5f, -0.5f, 0.0f, 0.5f, -0.5f,
-                           0.0f,  0.0f,  0.5f, 0.0f };
-
     constexpr int max_nb_vbo = 5;
     int index_vbo = 0;
     GLuint vbo_ids[max_nb_vbo];
@@ -186,34 +187,127 @@ void program::init_object()
     if (vertex_location != -1)
     {
         glBindBuffer(GL_ARRAY_BUFFER, vbo_ids[index_vbo++]);
-        glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices,
-                     GL_STATIC_DRAW);
+        glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(GLfloat),
+                     vertices.data(), GL_STATIC_DRAW);
         glVertexAttribPointer(vertex_location, 3, GL_FLOAT, GL_FALSE, 0, 0);
         glEnableVertexAttribArray(vertex_location);
+    }
+
+    GLint normalFlat = glGetAttribLocation(prog_id_, "normalFlat");
+    if (normalFlat != -1)
+    {
+        glBindBuffer(GL_ARRAY_BUFFER, vbo_ids[index_vbo++]);
+        glBufferData(GL_ARRAY_BUFFER, normals_flat.size() * sizeof(GLfloat),
+                     normals_flat.data(), GL_STATIC_DRAW);
+        glVertexAttribPointer(normalFlat, 3, GL_FLOAT, GL_FALSE, 0, 0);
+        glEnableVertexAttribArray(normalFlat);
+    }
+
+    GLint uv_location = glGetAttribLocation(prog_id_, "uv");
+    if (uv_location != -1)
+    {
+        glBindBuffer(GL_ARRAY_BUFFER, vbo_ids[index_vbo++]);
+        glBufferData(GL_ARRAY_BUFFER, uv.size() * sizeof(float), uv.data(),
+                     GL_STATIC_DRAW);
+        glVertexAttribPointer(uv_location, 2, GL_FLOAT, GL_FALSE, 0, 0);
+        glEnableVertexAttribArray(uv_location);
     }
 
     glBindVertexArray(0);
 }
 
-void program::init_POV()
+void program::init_texture(tifo::rgb24_image* texture,
+                           tifo::rgb24_image* lighting)
 {
     glUseProgram(prog_id_);
 
-    mygl::matrix4 mv =
-        mygl::look_at(0.0f, 0.0f, 3.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f);
+    GLuint texture_id;
+    GLuint lighting_id;
 
-    mygl::matrix4 proj = mygl::frustum(-1.0f, 1.0f, -1.0f, 1.0f, 1.0f, 100.0f);
+    GLint tex_location;
+    GLint light_location;
+    GLint texture_units, combined_texture_units;
+    glGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS, &texture_units);
+    glGetIntegerv(GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS, &combined_texture_units);
+    glGenTextures(1, &texture_id);
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, texture_id);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, texture->sx, texture->sy, 0, GL_RGB,
+                 GL_UNSIGNED_BYTE, texture->pixels);
+    tex_location = glGetUniformLocation(prog_id_, "texture_sampler");
+    glUniform1i(tex_location, 0);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+    // lighting
+    glGenTextures(1, &lighting_id);
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_2D, lighting_id);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, lighting->sx, lighting->sy, 0,
+                 GL_RGB, GL_UNSIGNED_BYTE, lighting->pixels);
+    light_location = glGetUniformLocation(prog_id_, "lighting_sampler");
+    glUniform1i(light_location, 1);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+}
+
+void program::init_POV(mygl::vector3 eye, mygl::vector3 center,
+                       mygl::vector3 up, GLfloat left, GLfloat right,
+                       GLfloat bottom, GLfloat top, GLfloat nearVal,
+                       GLfloat farVal)
+{
+    glUseProgram(prog_id_);
+    mygl::matrix4 mv = mygl::look_at(eye.a_, eye.b_, eye.c_, center.a_,
+                                     center.b_, center.c_, up.a_, up.b_, up.c_);
+
+    mygl::matrix4 proj =
+        mygl::frustum(left, right, bottom, top, nearVal, farVal);
 
     GLint mv_loc = glGetUniformLocation(prog_id_, "model_view_matrix");
     GLint proj_loc = glGetUniformLocation(prog_id_, "projection_matrix");
     GLint col_loc = glGetUniformLocation(prog_id_, "color_");
+    GLint light_col_loc = glGetUniformLocation(prog_id_, "light_color");
+    GLint light_pos_loc = glGetUniformLocation(prog_id_, "light_position");
 
     if (mv_loc != -1)
+    {
         glUniformMatrix4fv(mv_loc, 1, GL_FALSE, mv.data());
-
+    }
     if (proj_loc != -1)
+    {
         glUniformMatrix4fv(proj_loc, 1, GL_FALSE, proj.data());
-
+    }
     if (col_loc != -1)
+    {
         glUniform3f(col_loc, 1.0f, 0.0f, 0.0f);
+    }
+    if (light_col_loc != -1)
+    {
+        glUniform3f(light_col_loc, 1.0f, 1.0f, 1.0f);
+    }
+    if (light_pos_loc != -1)
+    {
+        glUniform3f(light_pos_loc, 3.0f, 3.0f, 0.0f);
+    }
+}
+
+void program::init_3f(const std::string& loc, const mygl::vector3& to_init)
+{
+    GLint to_be_init = glGetUniformLocation(prog_id_, loc.c_str());
+    if (to_be_init != -1)
+    {
+        glUniform3f(to_be_init, to_init.a_, to_init.b_, to_init.c_);
+    }
+}
+void program::mat4vf(const std::string& loc, const mygl::matrix4& m)
+{
+    GLint to_be_init = glGetUniformLocation(prog_id_, loc.c_str());
+    if (to_be_init != -1)
+    {
+        glUniformMatrix4fv(to_be_init, 1, GL_FALSE, m.data());
+    }
 }
