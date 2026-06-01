@@ -1,4 +1,5 @@
 #include <cmath>
+#include <filesystem>
 #include <iostream>
 
 #include "img/image.hh"
@@ -362,28 +363,23 @@ int main(int argc, char* argv[])
         return 1;
 	init_fbo();
 	g_sun_dir.normalize();
+
+    const std::filesystem::path base =
+        std::filesystem::absolute(argv[0]).parent_path();
+    auto asset = [&](const char* rel) { return (base / rel).string(); };
+
     try
     {
-        g_program = init_shaders(
-            "/home/ad/image/OPENGL/TP/pogl_skel_tp/tp2/vertex.shd",
-            "/home/ad/image/OPENGL/TP/pogl_skel_tp/tp2/fragment.shd");
-        q_program = init_shaders(
-            "/home/ad/image/OPENGL/TP/pogl_skel_tp/tp2/outlineVertexShader.shd",
-            "/home/ad/image/OPENGL/TP/pogl_skel_tp/tp2/"
-            "outlineFragmentShader.shd");
-        sky_program = init_shaders(
-            "/home/ad/image/OPENGL/TP/pogl_skel_tp/tp2/sky_vertex.shd",
-            "/home/ad/image/OPENGL/TP/pogl_skel_tp/tp2/sky_fragment.shd"
-        );
-        ground_program = init_shaders(
-            "/home/ad/image/OPENGL/TP/pogl_skel_tp/tp2/groundVertex.shd",
-            "/home/ad/image/OPENGL/TP/pogl_skel_tp/tp2/groundFragment.shd"
-        );
-        post_program = init_shaders(
-            "/home/ad/image/OPENGL/TP/pogl_skel_tp/tp2/post_vertex.shd",
-            "/home/ad/image/OPENGL/TP/pogl_skel_tp/tp2/post_fragment.shd"
-
-        );
+        g_program = init_shaders(asset("shaders/vertex.shd"),
+                                 asset("shaders/fragment.shd"));
+        q_program = init_shaders(asset("shaders/outlineVertexShader.shd"),
+                                 asset("shaders/outlineFragmentShader.shd"));
+        sky_program = init_shaders(asset("shaders/sky_vertex.shd"),
+                                   asset("shaders/sky_fragment.shd"));
+        ground_program = init_shaders(asset("shaders/groundVertex.shd"),
+                                      asset("shaders/groundFragment.shd"));
+        post_program = init_shaders(asset("shaders/post_vertex.shd"),
+                                    asset("shaders/post_fragment.shd"));
     }
     catch (const std::exception& e)
     {
@@ -408,8 +404,8 @@ int main(int argc, char* argv[])
                        mygl::vector3(0.0f, 0.0f, 0.0f),
                        mygl::vector3(0.0f, 1.0f, 0.0f), -1.0f, 1.0f, -1.0f,
                        1.0f, 1.0f, 250.0f);
-    tifo::rgb24_image* texture = tifo::load_image("texture.tga");
-    tifo::rgb24_image* lighting = tifo::load_image("lighting.tga");
+    tifo::rgb24_image* texture = tifo::load_image(asset("texture.tga").c_str());
+    tifo::rgb24_image* lighting = tifo::load_image(asset("lighting.tga").c_str());
     g_program.init_texture(texture, lighting);
 
 	ground(g_verts, g_normals, g_uv, 200.0f);

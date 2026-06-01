@@ -9,6 +9,7 @@
 #ifndef IMAGE_HH
 #define IMAGE_HH
 
+#include <cstddef>
 #include <cstdint>
 
 #define IMAGE_NB_LEVELS 256
@@ -21,8 +22,8 @@ namespace tifo
     // typedef uint8_t* __restrict__
     // __attribute__((aligned(TL_IMAGE_ALIGNMENT))) GRAY8; typedef uint8_t*
     // __restrict__ __attribute__((aligned(TL_IMAGE_ALIGNMENT))) RGB8;
-    typedef uint8_t* GRAY8 alignas(TL_IMAGE_ALIGNMENT);
-    typedef uint8_t* RGB8 alignas(TL_IMAGE_ALIGNMENT);
+    typedef uint8_t* GRAY8;
+    typedef uint8_t* RGB8;
 
     /**
      * Gray scale image with pixels on 8 bits.

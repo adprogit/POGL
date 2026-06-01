@@ -3,9 +3,16 @@
 bool init_glut(int& argc, char* argv[])
 {
     glutInit(&argc, argv);
+#ifdef __APPLE__
+    // Apple's legacy GLUT lacks glutInitContextVersion/Profile; request a
+    // core profile (up to GL 4.1 on macOS) via the display-mode flag instead.
+    glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE | GLUT_DEPTH
+                        | GLUT_3_2_CORE_PROFILE);
+#else
     glutInitContextVersion(4, 1);
     glutInitContextProfile(GLUT_CORE_PROFILE);
     glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE | GLUT_DEPTH);
+#endif
     glutInitWindowSize(1024, 1024);
     glutInitWindowPosition(10, 10);
     glutCreateWindow(" Test OpenGL − POGL");

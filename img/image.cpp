@@ -19,8 +19,13 @@ namespace tifo
         sy = _sy;
 
         length = sx * sy;
-        pixels =
-            static_cast<GRAY8>(std::aligned_alloc(TL_IMAGE_ALIGNMENT, length));
+        // aligned_alloc requires the size to be a multiple of the alignment
+        // (strictly enforced on macOS, where it otherwise returns nullptr),
+        // so round the allocation up. length keeps the true data size.
+        std::size_t alloc_size = (length + TL_IMAGE_ALIGNMENT - 1)
+            / TL_IMAGE_ALIGNMENT * TL_IMAGE_ALIGNMENT;
+        pixels = static_cast<GRAY8>(
+            std::aligned_alloc(TL_IMAGE_ALIGNMENT, alloc_size));
     }
 
     gray8_image::~gray8_image()
@@ -44,8 +49,13 @@ namespace tifo
         sy = _sy;
 
         length = sx * sy * 3;
-        pixels =
-            static_cast<RGB8>(std::aligned_alloc(TL_IMAGE_ALIGNMENT, length));
+        // aligned_alloc requires the size to be a multiple of the alignment
+        // (strictly enforced on macOS, where it otherwise returns nullptr),
+        // so round the allocation up. length keeps the true data size.
+        std::size_t alloc_size = (length + TL_IMAGE_ALIGNMENT - 1)
+            / TL_IMAGE_ALIGNMENT * TL_IMAGE_ALIGNMENT;
+        pixels = static_cast<RGB8>(
+            std::aligned_alloc(TL_IMAGE_ALIGNMENT, alloc_size));
     }
 
     rgb24_image::~rgb24_image()
