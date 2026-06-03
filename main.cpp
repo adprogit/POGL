@@ -526,11 +526,6 @@ int main(int argc, char* argv[])
         return 1;
     }
     glGenVertexArrays(1, &sky_vao);
-    if (!load_obj("Pine_4.obj", vertices, normals_flat, uv))
-    {
-        std::cerr << "Could not load map.obj" << std::endl;
-        return 1;
-    }
     if (!load_obj(asset("real_pine_bark.obj").c_str(), trunk_v, trunk_n, trunk_uv))
     {
         std::cerr << "Could not load laf.obj" << std::endl;
@@ -557,8 +552,8 @@ int main(int argc, char* argv[])
         tifo::load_image(asset("lighting.tga").c_str());
     g_program.init_texture(texture, lighting);
 
-    tifo::rgb24_image* bark    = tifo::load_image("bark.tga");
-    tifo::rgb24_image* leaf    = tifo::load_image("leaf.tga");
+    tifo::rgb24_image* bark    = tifo::load_image(asset("bark.tga").c_str());
+    tifo::rgb24_image* leaf    = tifo::load_image(asset("leaf.tga").c_str());
 
     trunk_program.init_single_texture(bark, lighting);
     leaves_program.init_single_texture(leaf, lighting);
