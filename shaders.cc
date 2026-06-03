@@ -311,3 +311,29 @@ void program::mat4vf(const std::string& loc, const mygl::matrix4& m)
         glUniformMatrix4fv(to_be_init, 1, GL_FALSE, m.data());
     }
 }
+void program::init_single_texture(tifo::rgb24_image* tex, tifo::rgb24_image* lighting)
+{
+    glUseProgram(prog_id_);
+
+    glGenTextures(1, &texture_id_);
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, texture_id_);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, tex->sx, tex->sy, 0, GL_RGB,
+                 GL_UNSIGNED_BYTE, tex->pixels);
+    glUniform1i(glGetUniformLocation(prog_id_, "texture_sampler"), 0);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+    glGenTextures(1, &lighting_id_);
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_2D, lighting_id_);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, lighting->sx, lighting->sy, 0, GL_RGB,
+                 GL_UNSIGNED_BYTE, lighting->pixels);
+    glUniform1i(glGetUniformLocation(prog_id_, "lighting_sampler"), 1);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+}

@@ -5,6 +5,7 @@
 #include "img/image.hh"
 #include "img/image_io.hh"
 #include "init.hh"
+#include "obj_loader.hh"
 #include "shaders.hh"
 
 program g_program;
@@ -21,27 +22,33 @@ program post_program;
 mygl::vector3 g_sun_dir(0.3f, 0.7f, 0.4f);
 mygl::vector3 g_sun_color(1.0f, 0.95f, 0.85f);
 
+program trunk_program;
+program leaves_program;
+std::vector<GLfloat> trunk_v, trunk_n, trunk_uv;
+std::vector<GLfloat> leaf_v, leaf_n, leaf_uv;
 
-void ground(std::vector<GLfloat>& vertices,
-            std::vector<GLfloat>& normals,
-            std::vector<GLfloat>& uv,
-            float size)
+void ground(std::vector<GLfloat>& vertices, std::vector<GLfloat>& normals,
+            std::vector<GLfloat>& uv, float size)
 {
     vertices.clear();
     normals.clear();
     uv.clear();
     float h = size / 2.0f;
 
-    float verts[18] = {
-        -h, 0, -h,   h, 0, -h,   h, 0,  h,
-        -h, 0, -h,   h, 0,  h,  -h, 0,  h
-    };
-    for (int i = 0; i < 18; i++) vertices.push_back(verts[i]);
-    for (int i = 0; i < 6; i++) {
-        normals.push_back(0); normals.push_back(1); normals.push_back(0);
+    float verts[18] = { -h, 0, -h, h, 0, -h, h,  0, h,
+                        -h, 0, -h, h, 0, h,  -h, 0, h };
+    for (int i = 0; i < 18; i++)
+        vertices.push_back(verts[i]);
+    for (int i = 0; i < 6; i++)
+    {
+        normals.push_back(0);
+        normals.push_back(1);
+        normals.push_back(0);
     }
-    for (int i = 0; i < 6; i++) {
-        uv.push_back(0); uv.push_back(0);
+    for (int i = 0; i < 6; i++)
+    {
+        uv.push_back(0);
+        uv.push_back(0);
     }
 }
 
@@ -62,11 +69,9 @@ mygl::matrix4 g_view, g_proj;
 
 bool key_up = false, key_down = false, key_left = false, key_right = false;
 
-
 void cylinder(std::vector<GLfloat>& vertices,
               std::vector<GLfloat>& normals_flat,
-              std::vector<GLfloat>& uv_buffer_data,
-              GLfloat radius,
+              std::vector<GLfloat>& uv_buffer_data, GLfloat radius,
               GLfloat height, int segments)
 {
     vertices.clear();
@@ -74,13 +79,12 @@ void cylinder(std::vector<GLfloat>& vertices,
     const double step = 2.0 * M_PI / segments;
     const double halfH = 0.5 * height;
 
-
     for (int i = 0; i < segments; i++)
     {
         double theta = i * step;
         double theta1 = (i + 1) * step;
-        float u0 = (float)i/segments;
-    	float u1 = (float)(i + 1) / segments;
+        float u0 = (float)i / segments;
+        float u1 = (float)(i + 1) / segments;
         GLfloat c0 = std::cos(theta);
         GLfloat s0 = std::sin(theta);
         GLfloat c1 = std::cos(theta1);
@@ -96,7 +100,6 @@ void cylinder(std::vector<GLfloat>& vertices,
         normals_flat.push_back(0.0f);
         normals_flat.push_back(s0);
 
-
         vertices.push_back(x1);
         vertices.push_back(-halfH);
         vertices.push_back(z1);
@@ -110,11 +113,10 @@ void cylinder(std::vector<GLfloat>& vertices,
         normals_flat.push_back(c1);
         normals_flat.push_back(0.0f);
         normals_flat.push_back(s1);
-
 
         uv_buffer_data.insert(uv_buffer_data.end(), { u0, 0.0f });
-    	uv_buffer_data.insert(uv_buffer_data.end(), { u1, 0.0f });
-    	uv_buffer_data.insert(uv_buffer_data.end(), { u0, 1.0f });
+        uv_buffer_data.insert(uv_buffer_data.end(), { u1, 0.0f });
+        uv_buffer_data.insert(uv_buffer_data.end(), { u0, 1.0f });
 
         vertices.push_back(x0);
         vertices.push_back(-halfH);
@@ -122,7 +124,6 @@ void cylinder(std::vector<GLfloat>& vertices,
         normals_flat.push_back(c0);
         normals_flat.push_back(0.0f);
         normals_flat.push_back(s0);
-
 
         vertices.push_back(x1);
         vertices.push_back(halfH);
@@ -138,10 +139,9 @@ void cylinder(std::vector<GLfloat>& vertices,
         normals_flat.push_back(0.0f);
         normals_flat.push_back(s0);
 
-
-         uv_buffer_data.insert(uv_buffer_data.end(), { u1, 0.0f });
-    	uv_buffer_data.insert(uv_buffer_data.end(), { u1, 1.0f });
-    	uv_buffer_data.insert(uv_buffer_data.end(), { u0, 1.0f });
+        uv_buffer_data.insert(uv_buffer_data.end(), { u1, 0.0f });
+        uv_buffer_data.insert(uv_buffer_data.end(), { u1, 1.0f });
+        uv_buffer_data.insert(uv_buffer_data.end(), { u0, 1.0f });
     }
 }
 std::vector<GLfloat> vertices;
@@ -150,39 +150,57 @@ std::vector<GLfloat> uv;
 
 void keyboard_down(unsigned char key, int, int)
 {
-    if (key == 'z' || key == 'Z' || key == 'w' || key == 'W') key_z = true;
-    if (key == 's' || key == 'S') key_s = true;
-    if (key == 'q' || key == 'Q' || key == 'a' || key == 'A') key_q = true;
-    if (key == 'd' || key == 'D') key_d = true;
-    if (key == 27) exit(0);
+    if (key == 'z' || key == 'Z' || key == 'w' || key == 'W')
+        key_z = true;
+    if (key == 's' || key == 'S')
+        key_s = true;
+    if (key == 'q' || key == 'Q' || key == 'a' || key == 'A')
+        key_q = true;
+    if (key == 'd' || key == 'D')
+        key_d = true;
+    if (key == 27)
+        exit(0);
 }
 
 void keyboard_up(unsigned char key, int, int)
 {
-    if (key == 'z' || key == 'Z' || key == 'w' || key == 'W') key_z = false;
-    if (key == 's' || key == 'S') key_s = false;
-    if (key == 'q' || key == 'Q' || key == 'a' || key == 'A') key_q = false;
-    if (key == 'd' || key == 'D') key_d = false;
+    if (key == 'z' || key == 'Z' || key == 'w' || key == 'W')
+        key_z = false;
+    if (key == 's' || key == 'S')
+        key_s = false;
+    if (key == 'q' || key == 'Q' || key == 'a' || key == 'A')
+        key_q = false;
+    if (key == 'd' || key == 'D')
+        key_d = false;
 }
 void special_down(int key, int, int)
 {
-    if (key == GLUT_KEY_UP)    key_up    = true;
-    if (key == GLUT_KEY_DOWN)  key_down  = true;
-    if (key == GLUT_KEY_LEFT)  key_left  = true;
-    if (key == GLUT_KEY_RIGHT) key_right = true;
+    if (key == GLUT_KEY_UP)
+        key_up = true;
+    if (key == GLUT_KEY_DOWN)
+        key_down = true;
+    if (key == GLUT_KEY_LEFT)
+        key_left = true;
+    if (key == GLUT_KEY_RIGHT)
+        key_right = true;
 }
 
 void special_up(int key, int, int)
 {
-    if (key == GLUT_KEY_UP)    key_up    = false;
-    if (key == GLUT_KEY_DOWN)  key_down  = false;
-    if (key == GLUT_KEY_LEFT)  key_left  = false;
-    if (key == GLUT_KEY_RIGHT) key_right = false;
+    if (key == GLUT_KEY_UP)
+        key_up = false;
+    if (key == GLUT_KEY_DOWN)
+        key_down = false;
+    if (key == GLUT_KEY_LEFT)
+        key_left = false;
+    if (key == GLUT_KEY_RIGHT)
+        key_right = false;
 }
 
 void keyboard(unsigned char key, int, int)
 {
-    if (key == 27) exit(0);
+    if (key == 27)
+        exit(0);
 }
 
 int mouse_x = win_w / 2;
@@ -192,19 +210,22 @@ void passive_motion(int x, int y)
 {
     mouse_x = x;
     mouse_y = y;
-}void compute_matrices_from_inputs()
+}
+void compute_matrices_from_inputs()
 {
     static int last_time = glutGet(GLUT_ELAPSED_TIME);
     int now = glutGet(GLUT_ELAPSED_TIME);
     float delta_time = (now - last_time) / 1000.0f;
     last_time = now;
 
-    if (last_mouse_x >= 0) {
+    if (last_mouse_x >= 0)
+    {
         int dx = mouse_x - last_mouse_x;
         int dy = mouse_y - last_mouse_y;
-        if (std::abs(dx) < 200 && std::abs(dy) < 200) {
+        if (std::abs(dx) < 200 && std::abs(dy) < 200)
+        {
             horizontal_angle -= dx * mouse_speed;
-            vertical_angle   -= dy * mouse_speed;
+            vertical_angle -= dy * mouse_speed;
         }
     }
     last_mouse_x = mouse_x;
@@ -213,16 +234,22 @@ void passive_motion(int x, int y)
     const int margin = 80;
     const float edge_speed = 1.5f;
     if (mouse_x < margin)
-        horizontal_angle += edge_speed * delta_time * (margin - mouse_x) / float(margin);
+        horizontal_angle +=
+            edge_speed * delta_time * (margin - mouse_x) / float(margin);
     if (mouse_x > win_w - margin)
-        horizontal_angle -= edge_speed * delta_time * (mouse_x - (win_w - margin)) / float(margin);
+        horizontal_angle -= edge_speed * delta_time
+            * (mouse_x - (win_w - margin)) / float(margin);
     if (mouse_y < margin)
-        vertical_angle += edge_speed * delta_time * (margin - mouse_y) / float(margin);
+        vertical_angle +=
+            edge_speed * delta_time * (margin - mouse_y) / float(margin);
     if (mouse_y > win_h - margin)
-        vertical_angle -= edge_speed * delta_time * (mouse_y - (win_h - margin)) / float(margin);
+        vertical_angle -= edge_speed * delta_time * (mouse_y - (win_h - margin))
+            / float(margin);
 
-    if (vertical_angle >  1.5f) vertical_angle =  1.5f;
-    if (vertical_angle < -1.5f) vertical_angle = -1.5f;
+    if (vertical_angle > 1.5f)
+        vertical_angle = 1.5f;
+    if (vertical_angle < -1.5f)
+        vertical_angle = -1.5f;
 
     float fx = std::cos(vertical_angle) * std::sin(horizontal_angle);
     float fy = std::sin(vertical_angle);
@@ -231,21 +258,31 @@ void passive_motion(int x, int y)
     float rx = std::sin(horizontal_angle - 1.5708f);
     float rz = std::cos(horizontal_angle - 1.5708f);
 
-    if (key_z) { pos_x += fx * delta_time * speed;
-                 pos_y += fy * delta_time * speed;
-                 pos_z += fz * delta_time * speed; }
-    if (key_s) { pos_x -= fx * delta_time * speed;
-                 pos_y -= fy * delta_time * speed;
-                 pos_z -= fz * delta_time * speed; }
-    if (key_d) { pos_x += rx * delta_time * speed;
-                 pos_z += rz * delta_time * speed; }
-    if (key_q) { pos_x -= rx * delta_time * speed;
-                 pos_z -= rz * delta_time * speed; }
+    if (key_z)
+    {
+        pos_x += fx * delta_time * speed;
+        pos_y += fy * delta_time * speed;
+        pos_z += fz * delta_time * speed;
+    }
+    if (key_s)
+    {
+        pos_x -= fx * delta_time * speed;
+        pos_y -= fy * delta_time * speed;
+        pos_z -= fz * delta_time * speed;
+    }
+    if (key_d)
+    {
+        pos_x += rx * delta_time * speed;
+        pos_z += rz * delta_time * speed;
+    }
+    if (key_q)
+    {
+        pos_x -= rx * delta_time * speed;
+        pos_z -= rz * delta_time * speed;
+    }
 
-    g_view = mygl::look_at(
-        pos_x, pos_y, pos_z,
-        pos_x + fx, pos_y + fy, pos_z + fz,
-        0, 1, 0);
+    g_view = mygl::look_at(pos_x, pos_y, pos_z, pos_x + fx, pos_y + fy,
+                           pos_z + fz, 0, 1, 0);
     g_proj = mygl::frustum(-1, 1, -1, 1, 1.0f, 250.0f);
 }
 
@@ -260,13 +297,14 @@ void init_fbo()
     glBindFramebuffer(GL_FRAMEBUFFER, scene_fbo);
     glGenTextures(1, &scene_color_tex);
     glBindTexture(GL_TEXTURE_2D, scene_color_tex);
-glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, 1024, 1024, 0, GL_RGB, GL_FLOAT, NULL);
-glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, 1024, 1024, 0, GL_RGB, GL_FLOAT,
+                 NULL);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
-                           GL_TEXTURE_2D, scene_color_tex, 0);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
+                           scene_color_tex, 0);
     glGenRenderbuffers(1, &scene_depth_rbo);
     glBindRenderbuffer(GL_RENDERBUFFER, scene_depth_rbo);
     glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, 1024, 1024);
@@ -282,7 +320,7 @@ glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 void display()
 {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	glBindFramebuffer(GL_FRAMEBUFFER, scene_fbo);
+    glBindFramebuffer(GL_FRAMEBUFFER, scene_fbo);
     glViewport(0, 0, 1024, 1024);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -291,9 +329,9 @@ void display()
     glDisable(GL_CULL_FACE);
     sky_program.use();
     mygl::matrix4 inv_vp = (g_proj * g_view).inverse();
-	sky_program.mat4vf("inv_view_proj", inv_vp);
-	sky_program.init_3f("sun_dir", g_sun_dir);
-	sky_program.init_3f("cam_pos", mygl::vector3(pos_x, pos_y, pos_z));
+    sky_program.mat4vf("inv_view_proj", inv_vp);
+    sky_program.init_3f("sun_dir", g_sun_dir);
+    sky_program.init_3f("cam_pos", mygl::vector3(pos_x, pos_y, pos_z));
     glBindVertexArray(sky_vao);
     glDrawArrays(GL_TRIANGLES, 0, 3);
     glEnable(GL_DEPTH_TEST);
@@ -307,45 +345,77 @@ void display()
     ground_program.mat4vf("model_view_matrix", mv_ground);
     ground_program.mat4vf("projection_matrix", g_proj);
     ground_program.init_3f("sun_dir", g_sun_dir);
-	ground_program.init_3f("sun_color", g_sun_color);
+    ground_program.init_3f("sun_color", g_sun_color);
     glBindVertexArray(ground_program.vao_id());
     glDrawArrays(GL_TRIANGLES, 0, g_verts.size() / 3);
 
-    mygl::matrix4 mv = g_view * mygl::translate(0, 0, 0);
-	glEnable(GL_CULL_FACE);
+    mygl::matrix4 mv = g_view * mygl::translate(0, -2, 0);
+
+    // --- TRONC ---
+    glEnable(GL_CULL_FACE);
     glCullFace(GL_BACK);
-    q_program.use();
-    q_program.mat4vf("model_view_matrix", mv);
-    q_program.mat4vf("projection_matrix", g_proj);
-
-    GLint thick = glGetUniformLocation(q_program.prog_id(), "outline_width");
-    if (thick != -1) glUniform1f(thick, 0.05f);
-    glBindVertexArray(q_program.vao_id());
-    glDrawArrays(GL_TRIANGLES, 0, vertices.size() / 3);
-
-    glCullFace(GL_FRONT);
-    g_program.use();
-    g_program.mat4vf("model_view_matrix", mv);
-    g_program.mat4vf("projection_matrix", g_proj);
-    g_program.init_3f("sun_dir", g_sun_dir);
-	g_program.init_3f("sun_color", g_sun_color);
-
-    glBindVertexArray(g_program.vao_id());
-    glDrawArrays(GL_TRIANGLES, 0, vertices.size() / 3);
-
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    glViewport(0, 0, 1024, 1024);
-    glClear(GL_COLOR_BUFFER_BIT);
-    glDisable(GL_DEPTH_TEST);
-	glDisable(GL_CULL_FACE);
-    post_program.use();
+    trunk_program.use();
     glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, scene_color_tex);
-    GLint loc = glGetUniformLocation(post_program.prog_id(), "scene_tex");
-    glUniform1i(loc, 0);
+    glBindTexture(GL_TEXTURE_2D, trunk_program.texture_id());   // <-- rebind bark
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_2D, trunk_program.lighting_id());
+    trunk_program.mat4vf("model_view_matrix", mv);
+    trunk_program.mat4vf("projection_matrix", g_proj);
+    trunk_program.init_3f("sun_dir", g_sun_dir);
+    trunk_program.init_3f("sun_color", g_sun_color);
+    glBindVertexArray(trunk_program.vao_id());
+    glDrawArrays(GL_TRIANGLES, 0, trunk_v.size() / 3);
 
-    glBindVertexArray(sky_vao);  // ou un autre VAO vide
-    glDrawArrays(GL_TRIANGLES, 0, 3);
+    // --- FEUILLES ---
+    glDisable(GL_CULL_FACE);
+    leaves_program.use();
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, leaves_program.texture_id());  // <-- rebind leaf
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_2D, leaves_program.lighting_id());
+    leaves_program.mat4vf("model_view_matrix", mv);
+    leaves_program.mat4vf("projection_matrix", g_proj);
+    leaves_program.init_3f("sun_dir", g_sun_dir);
+    leaves_program.init_3f("sun_color", g_sun_color);
+    glBindVertexArray(leaves_program.vao_id());
+    glDrawArrays(GL_TRIANGLES, 0, leaf_v.size() / 3);
+
+//    mygl::matrix4 mv = g_view * mygl::translate(0, -2, 0);
+//    glEnable(GL_CULL_FACE);
+//    glCullFace(GL_FRONT);
+//    q_program.use();
+//    q_program.mat4vf("model_view_matrix", mv);
+//    q_program.mat4vf("projection_matrix", g_proj);
+//
+//    GLint thick = glGetUniformLocation(q_program.prog_id(), "outline_width");
+//    if (thick != -1)
+//        glUniform1f(thick, 0.05f);
+//    glBindVertexArray(q_program.vao_id());
+//    //glDrawArrays(GL_TRIANGLES, 0, vertices.size());
+//
+//    glDisable(GL_CULL_FACE);
+//    g_program.use();
+//    g_program.mat4vf("model_view_matrix", mv);
+//    g_program.mat4vf("projection_matrix", g_proj);
+//    g_program.init_3f("sun_dir", g_sun_dir);
+//    g_program.init_3f("sun_color", g_sun_color);
+//
+//    glBindVertexArray(g_program.vao_id());
+//    glDrawArrays(GL_TRIANGLES, 0, vertices.size() / 3 );
+
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        glViewport(0, 0, 1024, 1024);
+        glClear(GL_COLOR_BUFFER_BIT);
+        glDisable(GL_DEPTH_TEST);
+    	glDisable(GL_CULL_FACE);
+        post_program.use();
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, scene_color_tex);
+        GLint loc = glGetUniformLocation(post_program.prog_id(), "scene_tex");
+        glUniform1i(loc, 0);
+
+     glBindVertexArray(sky_vao);  // ou un autre VAO vide
+     glDrawArrays(GL_TRIANGLES, 0, 3);
 
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_CULL_FACE);
@@ -361,8 +431,8 @@ int main(int argc, char* argv[])
         return 1;
     if (!init_gl())
         return 1;
-	init_fbo();
-	g_sun_dir.normalize();
+    init_fbo();
+    g_sun_dir.normalize();
 
     const std::filesystem::path base =
         std::filesystem::absolute(argv[0]).parent_path();
@@ -370,6 +440,10 @@ int main(int argc, char* argv[])
 
     try
     {
+        trunk_program = init_shaders(asset("shaders/vertex.shd"),
+                                 asset("shaders/fragment.shd"));
+        leaves_program = init_shaders(asset("shaders/vertex.shd"),
+                                 asset("shaders/fragment.shd"));
         g_program = init_shaders(asset("shaders/vertex.shd"),
                                  asset("shaders/fragment.shd"));
         q_program = init_shaders(asset("shaders/outlineVertexShader.shd"),
@@ -393,30 +467,54 @@ int main(int argc, char* argv[])
                   << g_program.get_log() << std::endl;
         return 1;
     }
-	glGenVertexArrays(1, &sky_vao);
-    cylinder(vertices, normals_flat, uv, 1.0f, 4.0f, 360);
+    glGenVertexArrays(1, &sky_vao);
+    if (!load_obj("Pine_4.obj", vertices, normals_flat, uv))
+    {
+        std::cerr << "Could not load map.obj" << std::endl;
+        return 1;
+    }
+    if (!load_obj(asset("real_pine_bark.obj").c_str(), trunk_v, trunk_n, trunk_uv))
+    {
+        std::cerr << "Could not load laf.obj" << std::endl;
+        return 1;
+    }
+    if (!load_obj(asset("real_pine_leaves.obj").c_str(), leaf_v, leaf_n, leaf_uv))
+    {
+        std::cerr << "Could not load trunk.obj" << std::endl;
+        return 1;
+    }
     auto L = 2 * M_PI * 4.0f * 1.0f;
     auto longueur = L / 4.0f;
     std::cerr << vertices.size();
     g_program.init_object(vertices, normals_flat, uv);
     q_program.init_object(vertices, normals_flat, uv);
+    trunk_program.init_object(trunk_v, trunk_n, trunk_uv);
+    leaves_program.init_object(leaf_v, leaf_n, leaf_uv);
     g_program.init_POV(mygl::vector3(4.0f, 1.0f, 4.5f),
                        mygl::vector3(0.0f, 0.0f, 0.0f),
                        mygl::vector3(0.0f, 1.0f, 0.0f), -1.0f, 1.0f, -1.0f,
                        1.0f, 1.0f, 250.0f);
     tifo::rgb24_image* texture = tifo::load_image(asset("texture.tga").c_str());
-    tifo::rgb24_image* lighting = tifo::load_image(asset("lighting.tga").c_str());
+    tifo::rgb24_image* lighting =
+        tifo::load_image(asset("lighting.tga").c_str());
     g_program.init_texture(texture, lighting);
 
-	ground(g_verts, g_normals, g_uv, 200.0f);
-	ground_program.init_object(g_verts, g_normals, g_uv);
+    tifo::rgb24_image* bark    = tifo::load_image("bark.tga");
+    tifo::rgb24_image* leaf    = tifo::load_image("leaf.tga");
 
- glutDisplayFunc(display);
-glutIdleFunc(idle);
-glutKeyboardFunc(keyboard_down);
-glutKeyboardUpFunc(keyboard_up);
-glutPassiveMotionFunc(passive_motion);
-glutIgnoreKeyRepeat(1);
+    trunk_program.init_single_texture(bark, lighting);
+    leaves_program.init_single_texture(leaf, lighting);
+
+
+    ground(g_verts, g_normals, g_uv, 200.0f);
+    ground_program.init_object(g_verts, g_normals, g_uv);
+
+    glutDisplayFunc(display);
+    glutIdleFunc(idle);
+    glutKeyboardFunc(keyboard_down);
+    glutKeyboardUpFunc(keyboard_up);
+    glutPassiveMotionFunc(passive_motion);
+    glutIgnoreKeyRepeat(1);
 
     glutMainLoop();
 
