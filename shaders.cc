@@ -3,6 +3,14 @@
 #include "img/image.hh"
 #include "img/image_io.hh"
 
+#define TEST_OPENGL_ERROR()                                      \
+    do {                                                         \
+    GLenum err = glGetError();                                   \
+    if (err != GL_NO_ERROR)                                      \
+    std::cerr << "OpenGL ERROR!" << __LINE__ << std::endl;       \
+} while (0)
+
+
 program::program()
 {
     prog_id_ = 0;
@@ -22,31 +30,37 @@ program program::make_program(const std::string& vertex_shader_src,
     const GLchar** string_vrtx = &c_string_vrtx;
     GLsizei count_vrtx = 1;
 
+    TEST_OPENGL_ERROR();
     glShaderSource(vertex_shader, count_vrtx, string_vrtx, nullptr);
-
+    TEST_OPENGL_ERROR();
     const char* c_string_frgmnt = fragment_shader_src.c_str();
     const GLchar** string_frgmnt = &c_string_frgmnt;
     GLsizei count_frgmnt = 1;
 
     glShaderSource(fragment_shader, count_frgmnt, string_frgmnt, nullptr);
-
+    TEST_OPENGL_ERROR();
     glCompileShader(vertex_shader);
+    TEST_OPENGL_ERROR();
     glCompileShader(fragment_shader);
+    TEST_OPENGL_ERROR();
 
     GLint vertex_compiled;
     glGetShaderiv(vertex_shader, GL_COMPILE_STATUS, &vertex_compiled);
+    TEST_OPENGL_ERROR();
     if (vertex_compiled != GL_TRUE)
     {
         GLint info_log_length_vertex;
 
         glGetShaderiv(vertex_shader, GL_INFO_LOG_LENGTH,
                       &info_log_length_vertex);
+        TEST_OPENGL_ERROR();
         if (info_log_length_vertex > 0)
         {
             GLchar* info_log_vertex = new GLchar[info_log_length_vertex];
 
             glGetShaderInfoLog(vertex_shader, info_log_length_vertex, NULL,
                                info_log_vertex);
+            TEST_OPENGL_ERROR();
 
             std::string tmp(info_log_vertex);
             delete[] info_log_vertex;
@@ -54,61 +68,78 @@ program program::make_program(const std::string& vertex_shader_src,
         }
         p.is_ready_ = GL_FALSE;
         glDeleteShader(vertex_shader);
+        TEST_OPENGL_ERROR();
         glDeleteShader(fragment_shader);
+        TEST_OPENGL_ERROR();
         return p;
     }
 
     GLint fragment_compiled;
     glGetShaderiv(fragment_shader, GL_COMPILE_STATUS, &fragment_compiled);
+    TEST_OPENGL_ERROR();
     if (fragment_compiled != GL_TRUE)
     {
         GLint info_log_length_fragment;
         glGetShaderiv(fragment_shader, GL_INFO_LOG_LENGTH,
                       &info_log_length_fragment);
+        TEST_OPENGL_ERROR();
         if (info_log_length_fragment > 0)
         {
             GLchar* info_log_fragment = new GLchar[info_log_length_fragment];
             glGetShaderInfoLog(fragment_shader, info_log_length_fragment, NULL,
                                info_log_fragment);
+            TEST_OPENGL_ERROR();
             std::string tmp(info_log_fragment);
             delete[] info_log_fragment;
             p.info_log_program_ = std::move(tmp);
         }
         p.is_ready_ = GL_FALSE;
         glDeleteShader(vertex_shader);
+        TEST_OPENGL_ERROR();
         glDeleteShader(fragment_shader);
+        TEST_OPENGL_ERROR();
         return p;
     }
 
     GLuint prog_id = glCreateProgram();
+    TEST_OPENGL_ERROR();
 
     p.prog_id_ = prog_id;
 
     glAttachShader(prog_id, fragment_shader);
+    TEST_OPENGL_ERROR();
     glAttachShader(prog_id, vertex_shader);
+    TEST_OPENGL_ERROR();
 
     glLinkProgram(prog_id);
+    TEST_OPENGL_ERROR();
     GLint program_linked;
 
     glGetProgramiv(prog_id, GL_LINK_STATUS, &program_linked);
+    TEST_OPENGL_ERROR();
     if (program_linked != GL_TRUE)
     {
         GLint info_log_length;
         glGetProgramiv(prog_id, GL_INFO_LOG_LENGTH, &info_log_length);
+        TEST_OPENGL_ERROR();
         if (info_log_length > 0)
         {
             GLchar* info_log_program = new GLchar[info_log_length];
             glGetProgramInfoLog(prog_id, info_log_length, NULL,
                                 info_log_program);
+            TEST_OPENGL_ERROR();
             std::string tmp(info_log_program);
             delete[] info_log_program;
             p.info_log_program_ = std::move(tmp);
         }
         glDeleteProgram(prog_id);
+        TEST_OPENGL_ERROR();
         p.prog_id_ = 0;
     }
     glDeleteShader(vertex_shader);
+    TEST_OPENGL_ERROR();
     glDeleteShader(fragment_shader);
+    TEST_OPENGL_ERROR();
 
     p.is_ready_ = program_linked;
     return p;
@@ -179,38 +210,54 @@ void program::init_object(const std::vector<GLfloat>& vertices,
     GLuint vbo_ids[max_nb_vbo];
 
     glGenVertexArrays(1, &vao_id_);
+    TEST_OPENGL_ERROR();
     glBindVertexArray(vao_id_);
+    TEST_OPENGL_ERROR();
 
     glGenBuffers(max_nb_vbo, vbo_ids);
+    TEST_OPENGL_ERROR();
 
     GLint vertex_location = glGetAttribLocation(prog_id_, "position");
     if (vertex_location != -1)
     {
         glBindBuffer(GL_ARRAY_BUFFER, vbo_ids[index_vbo++]);
+        TEST_OPENGL_ERROR();
         glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(GLfloat),
                      vertices.data(), GL_STATIC_DRAW);
+        TEST_OPENGL_ERROR();
         glVertexAttribPointer(vertex_location, 3, GL_FLOAT, GL_FALSE, 0, 0);
+        TEST_OPENGL_ERROR();
         glEnableVertexAttribArray(vertex_location);
+        TEST_OPENGL_ERROR();
     }
 
     GLint normalFlat = glGetAttribLocation(prog_id_, "normalFlat");
+    TEST_OPENGL_ERROR();
     if (normalFlat != -1)
     {
         glBindBuffer(GL_ARRAY_BUFFER, vbo_ids[index_vbo++]);
+        TEST_OPENGL_ERROR();
         glBufferData(GL_ARRAY_BUFFER, normals_flat.size() * sizeof(GLfloat),
                      normals_flat.data(), GL_STATIC_DRAW);
+        TEST_OPENGL_ERROR();
         glVertexAttribPointer(normalFlat, 3, GL_FLOAT, GL_FALSE, 0, 0);
+        TEST_OPENGL_ERROR();
         glEnableVertexAttribArray(normalFlat);
+        TEST_OPENGL_ERROR();
     }
 
     GLint uv_location = glGetAttribLocation(prog_id_, "uv");
     if (uv_location != -1)
     {
         glBindBuffer(GL_ARRAY_BUFFER, vbo_ids[index_vbo++]);
+        TEST_OPENGL_ERROR();
         glBufferData(GL_ARRAY_BUFFER, uv.size() * sizeof(float), uv.data(),
                      GL_STATIC_DRAW);
+        TEST_OPENGL_ERROR();
         glVertexAttribPointer(uv_location, 2, GL_FLOAT, GL_FALSE, 0, 0);
+        TEST_OPENGL_ERROR();
         glEnableVertexAttribArray(uv_location);
+        TEST_OPENGL_ERROR();
     }
 
     glBindVertexArray(0);
@@ -228,31 +275,49 @@ void program::init_texture(tifo::rgb24_image* texture,
     GLint light_location;
     GLint texture_units, combined_texture_units;
     glGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS, &texture_units);
+    TEST_OPENGL_ERROR();
     glGetIntegerv(GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS, &combined_texture_units);
+    TEST_OPENGL_ERROR();
     glGenTextures(1, &texture_id);
+    TEST_OPENGL_ERROR();
     glActiveTexture(GL_TEXTURE0);
+    TEST_OPENGL_ERROR();
     glBindTexture(GL_TEXTURE_2D, texture_id);
+    TEST_OPENGL_ERROR();
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, texture->sx, texture->sy, 0, GL_RGB,
                  GL_UNSIGNED_BYTE, texture->pixels);
+    TEST_OPENGL_ERROR();
     tex_location = glGetUniformLocation(prog_id_, "texture_sampler");
     glUniform1i(tex_location, 0);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    TEST_OPENGL_ERROR();
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    TEST_OPENGL_ERROR();
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    TEST_OPENGL_ERROR();
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    TEST_OPENGL_ERROR();
 
     // lighting
     glGenTextures(1, &lighting_id);
+    TEST_OPENGL_ERROR();
     glActiveTexture(GL_TEXTURE1);
+    TEST_OPENGL_ERROR();
     glBindTexture(GL_TEXTURE_2D, lighting_id);
+    TEST_OPENGL_ERROR();
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, lighting->sx, lighting->sy, 0,
                  GL_RGB, GL_UNSIGNED_BYTE, lighting->pixels);
+    TEST_OPENGL_ERROR();
     light_location = glGetUniformLocation(prog_id_, "lighting_sampler");
     glUniform1i(light_location, 1);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    TEST_OPENGL_ERROR();
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    TEST_OPENGL_ERROR();
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    TEST_OPENGL_ERROR();
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    TEST_OPENGL_ERROR();
 }
 
 void program::init_POV(mygl::vector3 eye, mygl::vector3 center,
@@ -316,24 +381,42 @@ void program::init_single_texture(tifo::rgb24_image* tex, tifo::rgb24_image* lig
     glUseProgram(prog_id_);
 
     glGenTextures(1, &texture_id_);
+    TEST_OPENGL_ERROR();
     glActiveTexture(GL_TEXTURE0);
+    TEST_OPENGL_ERROR();
     glBindTexture(GL_TEXTURE_2D, texture_id_);
+    TEST_OPENGL_ERROR();
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, tex->sx, tex->sy, 0, GL_RGB,
                  GL_UNSIGNED_BYTE, tex->pixels);
+    TEST_OPENGL_ERROR();
     glUniform1i(glGetUniformLocation(prog_id_, "texture_sampler"), 0);
+    TEST_OPENGL_ERROR();
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    TEST_OPENGL_ERROR();
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    TEST_OPENGL_ERROR();
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    TEST_OPENGL_ERROR();
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    TEST_OPENGL_ERROR();
 
     glGenTextures(1, &lighting_id_);
+    TEST_OPENGL_ERROR();
     glActiveTexture(GL_TEXTURE1);
+    TEST_OPENGL_ERROR();
     glBindTexture(GL_TEXTURE_2D, lighting_id_);
+    TEST_OPENGL_ERROR();
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, lighting->sx, lighting->sy, 0, GL_RGB,
                  GL_UNSIGNED_BYTE, lighting->pixels);
+    TEST_OPENGL_ERROR();
     glUniform1i(glGetUniformLocation(prog_id_, "lighting_sampler"), 1);
+    TEST_OPENGL_ERROR();
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    TEST_OPENGL_ERROR();
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    TEST_OPENGL_ERROR();
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    TEST_OPENGL_ERROR();
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    TEST_OPENGL_ERROR();
 }

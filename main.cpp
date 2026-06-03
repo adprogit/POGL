@@ -27,6 +27,13 @@ program leaves_program;
 std::vector<GLfloat> trunk_v, trunk_n, trunk_uv;
 std::vector<GLfloat> leaf_v, leaf_n, leaf_uv;
 
+#define TEST_OPENGL_ERROR()                                     \
+    do {                                                        \
+       GLenum err = glGetError();                               \
+       if (err != GL_NO_ERROR)                                  \
+        std::cerr << "OpenGL ERROR!" << __LINE__ << std::endl;  \
+} while (0)
+
 void ground(std::vector<GLfloat>& vertices, std::vector<GLfloat>& normals,
             std::vector<GLfloat>& uv, float size)
 {
@@ -294,22 +301,36 @@ void idle()
 void init_fbo()
 {
     glGenFramebuffers(1, &scene_fbo);
+    TEST_OPENGL_ERROR();
     glBindFramebuffer(GL_FRAMEBUFFER, scene_fbo);
+    TEST_OPENGL_ERROR();
     glGenTextures(1, &scene_color_tex);
+    TEST_OPENGL_ERROR();
     glBindTexture(GL_TEXTURE_2D, scene_color_tex);
+    TEST_OPENGL_ERROR();
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, 1024, 1024, 0, GL_RGB, GL_FLOAT,
                  NULL);
+    TEST_OPENGL_ERROR();
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    TEST_OPENGL_ERROR();
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    TEST_OPENGL_ERROR();
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    TEST_OPENGL_ERROR();
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    TEST_OPENGL_ERROR();
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
                            scene_color_tex, 0);
+    TEST_OPENGL_ERROR();
     glGenRenderbuffers(1, &scene_depth_rbo);
+    TEST_OPENGL_ERROR();
     glBindRenderbuffer(GL_RENDERBUFFER, scene_depth_rbo);
+    TEST_OPENGL_ERROR();
     glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, 1024, 1024);
+    TEST_OPENGL_ERROR();
     glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT,
                               GL_RENDERBUFFER, scene_depth_rbo);
+    TEST_OPENGL_ERROR();
 
     if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
         std::cerr << "FBO incomplete!" << std::endl;
@@ -320,65 +341,92 @@ void init_fbo()
 void display()
 {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    TEST_OPENGL_ERROR();
     glBindFramebuffer(GL_FRAMEBUFFER, scene_fbo);
+    TEST_OPENGL_ERROR();
     glViewport(0, 0, 1024, 1024);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    TEST_OPENGL_ERROR();
 
     glDisable(GL_DEPTH_TEST);
+    TEST_OPENGL_ERROR();
     glDepthMask(GL_FALSE);
+    TEST_OPENGL_ERROR();
     glDisable(GL_CULL_FACE);
+    TEST_OPENGL_ERROR();
     sky_program.use();
     mygl::matrix4 inv_vp = (g_proj * g_view).inverse();
     sky_program.mat4vf("inv_view_proj", inv_vp);
     sky_program.init_3f("sun_dir", g_sun_dir);
     sky_program.init_3f("cam_pos", mygl::vector3(pos_x, pos_y, pos_z));
     glBindVertexArray(sky_vao);
+    TEST_OPENGL_ERROR();
     glDrawArrays(GL_TRIANGLES, 0, 3);
+    TEST_OPENGL_ERROR();
     glEnable(GL_DEPTH_TEST);
+    TEST_OPENGL_ERROR();
     glDepthMask(GL_TRUE);
+    TEST_OPENGL_ERROR();
     glEnable(GL_CULL_FACE);
+    TEST_OPENGL_ERROR();
 
     glCullFace(GL_BACK);
+    TEST_OPENGL_ERROR();
     mygl::matrix4 mv_ground = g_view * mygl::translate(0, -2, 0);
     glDisable(GL_CULL_FACE);
+    TEST_OPENGL_ERROR();
     ground_program.use();
     ground_program.mat4vf("model_view_matrix", mv_ground);
     ground_program.mat4vf("projection_matrix", g_proj);
     ground_program.init_3f("sun_dir", g_sun_dir);
     ground_program.init_3f("sun_color", g_sun_color);
     glBindVertexArray(ground_program.vao_id());
+    TEST_OPENGL_ERROR();
     glDrawArrays(GL_TRIANGLES, 0, g_verts.size() / 3);
 
     mygl::matrix4 mv = g_view * mygl::translate(0, -2, 0);
 
     // --- TRONC ---
     glEnable(GL_CULL_FACE);
+    TEST_OPENGL_ERROR();
     glCullFace(GL_BACK);
+    TEST_OPENGL_ERROR();
     trunk_program.use();
     glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, trunk_program.texture_id());   // <-- rebind bark
+    glBindTexture(GL_TEXTURE_2D, trunk_program.texture_id());
+    TEST_OPENGL_ERROR();
     glActiveTexture(GL_TEXTURE1);
+    TEST_OPENGL_ERROR();
     glBindTexture(GL_TEXTURE_2D, trunk_program.lighting_id());
+    TEST_OPENGL_ERROR();
     trunk_program.mat4vf("model_view_matrix", mv);
     trunk_program.mat4vf("projection_matrix", g_proj);
     trunk_program.init_3f("sun_dir", g_sun_dir);
     trunk_program.init_3f("sun_color", g_sun_color);
+    TEST_OPENGL_ERROR();
     glBindVertexArray(trunk_program.vao_id());
+    TEST_OPENGL_ERROR();
     glDrawArrays(GL_TRIANGLES, 0, trunk_v.size() / 3);
+    TEST_OPENGL_ERROR();
 
-    // --- FEUILLES ---
     glDisable(GL_CULL_FACE);
+    TEST_OPENGL_ERROR();
     leaves_program.use();
     glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, leaves_program.texture_id());  // <-- rebind leaf
+    glBindTexture(GL_TEXTURE_2D, leaves_program.texture_id());
+    TEST_OPENGL_ERROR();
     glActiveTexture(GL_TEXTURE1);
+    TEST_OPENGL_ERROR();
     glBindTexture(GL_TEXTURE_2D, leaves_program.lighting_id());
+    TEST_OPENGL_ERROR();
     leaves_program.mat4vf("model_view_matrix", mv);
     leaves_program.mat4vf("projection_matrix", g_proj);
     leaves_program.init_3f("sun_dir", g_sun_dir);
     leaves_program.init_3f("sun_color", g_sun_color);
     glBindVertexArray(leaves_program.vao_id());
+    TEST_OPENGL_ERROR();
     glDrawArrays(GL_TRIANGLES, 0, leaf_v.size() / 3);
+    TEST_OPENGL_ERROR();
 
 //    mygl::matrix4 mv = g_view * mygl::translate(0, -2, 0);
 //    glEnable(GL_CULL_FACE);
@@ -404,23 +452,33 @@ void display()
 //    glDrawArrays(GL_TRIANGLES, 0, vertices.size() / 3 );
 
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        TEST_OPENGL_ERROR();
         glViewport(0, 0, 1024, 1024);
+        TEST_OPENGL_ERROR();
         glClear(GL_COLOR_BUFFER_BIT);
+        TEST_OPENGL_ERROR();
         glDisable(GL_DEPTH_TEST);
+        TEST_OPENGL_ERROR();
     	glDisable(GL_CULL_FACE);
+        TEST_OPENGL_ERROR();
         post_program.use();
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, scene_color_tex);
+        TEST_OPENGL_ERROR();
         GLint loc = glGetUniformLocation(post_program.prog_id(), "scene_tex");
         glUniform1i(loc, 0);
 
-     glBindVertexArray(sky_vao);  // ou un autre VAO vide
+     glBindVertexArray(sky_vao);
+     TEST_OPENGL_ERROR();
      glDrawArrays(GL_TRIANGLES, 0, 3);
+     TEST_OPENGL_ERROR();
 
     glEnable(GL_DEPTH_TEST);
+    TEST_OPENGL_ERROR();
     glEnable(GL_CULL_FACE);
-
+    TEST_OPENGL_ERROR();
     glutSwapBuffers();
+    TEST_OPENGL_ERROR();
 }
 
 int main(int argc, char* argv[])
@@ -508,15 +566,20 @@ int main(int argc, char* argv[])
 
     ground(g_verts, g_normals, g_uv, 200.0f);
     ground_program.init_object(g_verts, g_normals, g_uv);
-
+    TEST_OPENGL_ERROR();
     glutDisplayFunc(display);
+    TEST_OPENGL_ERROR();
     glutIdleFunc(idle);
+    TEST_OPENGL_ERROR();
     glutKeyboardFunc(keyboard_down);
+    TEST_OPENGL_ERROR();
     glutKeyboardUpFunc(keyboard_up);
+    TEST_OPENGL_ERROR();
     glutPassiveMotionFunc(passive_motion);
+    TEST_OPENGL_ERROR();
     glutIgnoreKeyRepeat(1);
-
+    TEST_OPENGL_ERROR();
     glutMainLoop();
-
+    TEST_OPENGL_ERROR();
     return 0;
 }
