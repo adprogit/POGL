@@ -3,13 +3,13 @@
 #include "img/image.hh"
 #include "img/image_io.hh"
 
-#define TEST_OPENGL_ERROR()                                      \
-    do {                                                         \
-    GLenum err = glGetError();                                   \
-    if (err != GL_NO_ERROR)                                      \
-    std::cerr << "OpenGL ERROR!" << __LINE__ << std::endl;       \
-} while (0)
-
+#define TEST_OPENGL_ERROR()                                                    \
+    do                                                                         \
+    {                                                                          \
+        GLenum err = glGetError();                                             \
+        if (err != GL_NO_ERROR)                                                \
+            std::cerr << "OpenGL ERROR!" << __LINE__ << std::endl;             \
+    } while (0)
 
 program::program()
 {
@@ -376,7 +376,8 @@ void program::mat4vf(const std::string& loc, const mygl::matrix4& m)
         glUniformMatrix4fv(to_be_init, 1, GL_FALSE, m.data());
     }
 }
-void program::init_single_texture(tifo::rgb24_image* tex, tifo::rgb24_image* lighting)
+void program::init_single_texture(tifo::rgb24_image* tex,
+                                  tifo::rgb24_image* lighting)
 {
     glUseProgram(prog_id_);
 
@@ -406,8 +407,8 @@ void program::init_single_texture(tifo::rgb24_image* tex, tifo::rgb24_image* lig
     TEST_OPENGL_ERROR();
     glBindTexture(GL_TEXTURE_2D, lighting_id_);
     TEST_OPENGL_ERROR();
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, lighting->sx, lighting->sy, 0, GL_RGB,
-                 GL_UNSIGNED_BYTE, lighting->pixels);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, lighting->sx, lighting->sy, 0,
+                 GL_RGB, GL_UNSIGNED_BYTE, lighting->pixels);
     TEST_OPENGL_ERROR();
     glUniform1i(glGetUniformLocation(prog_id_, "lighting_sampler"), 1);
     TEST_OPENGL_ERROR();

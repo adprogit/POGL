@@ -20,20 +20,6 @@ void main()
     float NdotL = max(dot(N, L), 0.0);
 
     vec3 ramp   = texture(lighting_sampler, vec2(NdotL, 0.5)).rgb;
-    vec3 albedo = texture(texture_sampler, uv_).rgb;
-
-    // couleur de base éclairée
-    vec3 color = albedo * ramp * sun_color;
-
-
-    vec3 viewDir = normalize(-frag_position);
-
-    // rim / liseré
-    float rim = 1.0 - max(dot(N, viewDir), 0.0);
-    float edge = smoothstep(0.6, 0.8, rim);
-
-    // assombrir les bords
-    color = mix(color, vec3(0.0), edge);
-
-    output_color = vec4(color, 1.0);
+    vec3 albedo = vec3(51.0/255.0, 88.0/255.0, 0.0);
+     output_color = vec4(albedo * ramp * sun_color, 1.0);
 }

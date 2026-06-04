@@ -7,6 +7,7 @@
 #include "init.hh"
 #include "obj_loader.hh"
 #include "shaders.hh"
+#include "helpers.hh"
 
 program g_program;
 program q_program;
@@ -27,12 +28,13 @@ program leaves_program;
 std::vector<GLfloat> trunk_v, trunk_n, trunk_uv;
 std::vector<GLfloat> leaf_v, leaf_n, leaf_uv;
 
-#define TEST_OPENGL_ERROR()                                     \
-    do {                                                        \
-       GLenum err = glGetError();                               \
-       if (err != GL_NO_ERROR)                                  \
-        std::cerr << "OpenGL ERROR!" << __LINE__ << std::endl;  \
-} while (0)
+#define TEST_OPENGL_ERROR()                                                    \
+    do                                                                         \
+    {                                                                          \
+        GLenum err = glGetError();                                             \
+        if (err != GL_NO_ERROR)                                                \
+            std::cerr << "OpenGL ERROR!" << __LINE__ << std::endl;             \
+    } while (0)
 
 void ground(std::vector<GLfloat>& vertices, std::vector<GLfloat>& normals,
             std::vector<GLfloat>& uv, float size)
@@ -385,6 +387,14 @@ void display()
     glDrawArrays(GL_TRIANGLES, 0, g_verts.size() / 3);
 
     mygl::matrix4 mv = g_view * mygl::translate(0, -2, 0);
+    glEnable(GL_CULL_FACE);
+    glCullFace(GL_FRONT);
+    q_program.use();
+    q_program.mat4vf("model_view_matrix", mv);
+    q_program.mat4vf("projection_matrix", g_proj);
+    glUniform1f(glGetUniformLocation(q_program.prog_id(), "outline_thickness"), 0.03f);
+    glBindVertexArray(trunk_program.vao_id());
+    glDrawArrays(GL_TRIANGLES, 0, trunk_v.size() / 3);
 
     // --- TRONC ---
     glEnable(GL_CULL_FACE);
@@ -428,50 +438,51 @@ void display()
     glDrawArrays(GL_TRIANGLES, 0, leaf_v.size() / 3);
     TEST_OPENGL_ERROR();
 
-//    mygl::matrix4 mv = g_view * mygl::translate(0, -2, 0);
-//    glEnable(GL_CULL_FACE);
-//    glCullFace(GL_FRONT);
-//    q_program.use();
-//    q_program.mat4vf("model_view_matrix", mv);
-//    q_program.mat4vf("projection_matrix", g_proj);
-//
-//    GLint thick = glGetUniformLocation(q_program.prog_id(), "outline_width");
-//    if (thick != -1)
-//        glUniform1f(thick, 0.05f);
-//    glBindVertexArray(q_program.vao_id());
-//    //glDrawArrays(GL_TRIANGLES, 0, vertices.size());
-//
-//    glDisable(GL_CULL_FACE);
-//    g_program.use();
-//    g_program.mat4vf("model_view_matrix", mv);
-//    g_program.mat4vf("projection_matrix", g_proj);
-//    g_program.init_3f("sun_dir", g_sun_dir);
-//    g_program.init_3f("sun_color", g_sun_color);
-//
-//    glBindVertexArray(g_program.vao_id());
-//    glDrawArrays(GL_TRIANGLES, 0, vertices.size() / 3 );
 
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);
-        TEST_OPENGL_ERROR();
-        glViewport(0, 0, 1024, 1024);
-        TEST_OPENGL_ERROR();
-        glClear(GL_COLOR_BUFFER_BIT);
-        TEST_OPENGL_ERROR();
-        glDisable(GL_DEPTH_TEST);
-        TEST_OPENGL_ERROR();
-    	glDisable(GL_CULL_FACE);
-        TEST_OPENGL_ERROR();
-        post_program.use();
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, scene_color_tex);
-        TEST_OPENGL_ERROR();
-        GLint loc = glGetUniformLocation(post_program.prog_id(), "scene_tex");
-        glUniform1i(loc, 0);
+    //    mygl::matrix4 mv = g_view * mygl::translate(0, -2, 0);
+    //    glEnable(GL_CULL_FACE);
+    //    glCullFace(GL_FRONT);
+    //    q_program.use();
+    //    q_program.mat4vf("model_view_matrix", mv);
+    //    q_program.mat4vf("projection_matrix", g_proj);
+    //
+    //    GLint thick = glGetUniformLocation(q_program.prog_id(),
+    //    "outline_width"); if (thick != -1)
+    //        glUniform1f(thick, 0.05f);
+    //    glBindVertexArray(q_program.vao_id());
+    //    //glDrawArrays(GL_TRIANGLES, 0, vertices.size());
+    //
+    //    glDisable(GL_CULL_FACE);
+    //    g_program.use();
+    //    g_program.mat4vf("model_view_matrix", mv);
+    //    g_program.mat4vf("projection_matrix", g_proj);
+    //    g_program.init_3f("sun_dir", g_sun_dir);
+    //    g_program.init_3f("sun_color", g_sun_color);
+    //
+    //    glBindVertexArray(g_program.vao_id());
+    //    glDrawArrays(GL_TRIANGLES, 0, vertices.size() / 3 );
 
-     glBindVertexArray(sky_vao);
-     TEST_OPENGL_ERROR();
-     glDrawArrays(GL_TRIANGLES, 0, 3);
-     TEST_OPENGL_ERROR();
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    TEST_OPENGL_ERROR();
+    glViewport(0, 0, 1024, 1024);
+    TEST_OPENGL_ERROR();
+    glClear(GL_COLOR_BUFFER_BIT);
+    TEST_OPENGL_ERROR();
+    glDisable(GL_DEPTH_TEST);
+    TEST_OPENGL_ERROR();
+    glDisable(GL_CULL_FACE);
+    TEST_OPENGL_ERROR();
+    post_program.use();
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, scene_color_tex);
+    TEST_OPENGL_ERROR();
+    GLint loc = glGetUniformLocation(post_program.prog_id(), "scene_tex");
+    glUniform1i(loc, 0);
+
+    glBindVertexArray(sky_vao);
+    TEST_OPENGL_ERROR();
+    glDrawArrays(GL_TRIANGLES, 0, 3);
+    TEST_OPENGL_ERROR();
 
     glEnable(GL_DEPTH_TEST);
     TEST_OPENGL_ERROR();
@@ -499,9 +510,9 @@ int main(int argc, char* argv[])
     try
     {
         trunk_program = init_shaders(asset("shaders/vertex.shd"),
-                                 asset("shaders/fragment.shd"));
+                                     asset("shaders/fragment.shd"));
         leaves_program = init_shaders(asset("shaders/vertex.shd"),
-                                 asset("shaders/fragment.shd"));
+                                      asset("shaders/leaves_fragment.shd"));
         g_program = init_shaders(asset("shaders/vertex.shd"),
                                  asset("shaders/fragment.shd"));
         q_program = init_shaders(asset("shaders/outlineVertexShader.shd"),
@@ -525,13 +536,17 @@ int main(int argc, char* argv[])
                   << g_program.get_log() << std::endl;
         return 1;
     }
+    std::cerr << "q ready: " << q_program.is_ready() << "\n";
+    if (!q_program.is_ready()) std::cerr << q_program.get_log() << "\n";
     glGenVertexArrays(1, &sky_vao);
-    if (!load_obj(asset("real_pine_bark.obj").c_str(), trunk_v, trunk_n, trunk_uv))
+    if (!load_obj(asset("real_pine_bark.obj").c_str(), trunk_v, trunk_n,
+                  trunk_uv))
     {
         std::cerr << "Could not load laf.obj" << std::endl;
         return 1;
     }
-    if (!load_obj(asset("real_pine_leaves.obj").c_str(), leaf_v, leaf_n, leaf_uv))
+    if (!load_obj(asset("real_pine_leaves.obj").c_str(), leaf_v, leaf_n,
+                  leaf_uv))
     {
         std::cerr << "Could not load trunk.obj" << std::endl;
         return 1;
@@ -539,8 +554,7 @@ int main(int argc, char* argv[])
     auto L = 2 * M_PI * 4.0f * 1.0f;
     auto longueur = L / 4.0f;
     std::cerr << vertices.size();
-    g_program.init_object(vertices, normals_flat, uv);
-    q_program.init_object(vertices, normals_flat, uv);
+
     trunk_program.init_object(trunk_v, trunk_n, trunk_uv);
     leaves_program.init_object(leaf_v, leaf_n, leaf_uv);
     g_program.init_POV(mygl::vector3(4.0f, 1.0f, 4.5f),
@@ -552,12 +566,12 @@ int main(int argc, char* argv[])
         tifo::load_image(asset("lighting.tga").c_str());
     g_program.init_texture(texture, lighting);
 
-    tifo::rgb24_image* bark    = tifo::load_image(asset("bark.tga").c_str());
-    tifo::rgb24_image* leaf    = tifo::load_image(asset("leaf.tga").c_str());
+    tifo::rgb24_image* bark = tifo::load_image(asset("bark.tga").c_str());
+    tifo::rgb24_image* bark_ramp = tifo::generate_toon_ramp(bark, 4);   // ta fonction histo
+    tifo::rgb24_image* leaf_ramp = tifo::generate_toon_ramp_from_color(51, 88, 0, 4);
 
-    trunk_program.init_single_texture(bark, lighting);
-    leaves_program.init_single_texture(leaf, lighting);
-
+    trunk_program.init_single_texture(bark, bark_ramp);
+    leaves_program.init_single_texture(leaf_ramp, leaf_ramp);
 
     ground(g_verts, g_normals, g_uv, 200.0f);
     ground_program.init_object(g_verts, g_normals, g_uv);
