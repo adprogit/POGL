@@ -3,7 +3,7 @@ in vec2 uv;
 uniform sampler2D scene_tex;
 out vec4 output_color;
 void main() {
-vec3 c = texture(scene_tex, uv).rgb;
-c = pow(c, vec3(1.0 / 2.2));  // gamma correction
-output_color = vec4(c, 1.0);
+    vec3 c = texture(scene_tex, uv).rgb;
+    c = pow(c, vec3(1.0 / 1.7  ));   // gamma
+    output_color = vec4(c, 1.0);
 }

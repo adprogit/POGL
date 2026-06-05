@@ -9,13 +9,14 @@ uniform vec3 sun_color;
 uniform mat4 model_view_matrix;
 uniform sampler2D texture_sampler;
 uniform sampler2D lighting_sampler;
+uniform mat4 view_matrix;
 
 out vec4 output_color;
 
 void main()
 {
     vec3 N = normalize(frag_normal);
-    vec3 L = normalize(mat3(model_view_matrix) * sun_dir);
+    vec3 L = normalize(mat3(view_matrix) * sun_dir);
 
     float NdotL = max(dot(N, L), 0.0);
 

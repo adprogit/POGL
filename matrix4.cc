@@ -252,6 +252,12 @@ namespace mygl
         }
         return result;
     }
+    matrix4 rotate_y(float a) {
+        matrix4 m = matrix4::identity();
+        float c = std::cos(a), s = std::sin(a);
+        m(0,0)=c; m(0,2)=s; m(2,0)=-s; m(2,2)=c;
+        return m;
+    }
 
 } // namespace mygl
 

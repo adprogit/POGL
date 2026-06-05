@@ -1,4 +1,4 @@
-#include "obj_loader.hh"
+    #include "obj_loader.hh"
 
 #include <fstream>
 #include <iostream>

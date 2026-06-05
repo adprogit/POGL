@@ -19,6 +19,7 @@
 
 namespace mygl {
 
+
 class vector3 {
 public:
   vector3(GLfloat a, GLfloat b, GLfloat c) : a_(a), b_(b), c_(c) {}
@@ -48,6 +49,8 @@ public:
 private:
   std::array<GLfloat, 16> content_;
 };
+
+    matrix4 rotate_y(float a);
 
 matrix4 look_at(const GLfloat &eyeX, const GLfloat &eyeY, const GLfloat &eyeZ,
                 const GLfloat &centerX, const GLfloat &centerY,
