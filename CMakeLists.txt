@@ -20,9 +20,21 @@ endif()
 add_executable(main main.cpp)
 target_link_libraries(main PRIVATE mygl)
 
-add_custom_command(TARGET main POST_BUILD
+# Track the actual asset/shader files so the copy re-runs whenever any change.
+file(GLOB_RECURSE ASSET_FILES CONFIGURE_DEPENDS ${CMAKE_SOURCE_DIR}/assets/*)
+file(GLOB_RECURSE SHADER_FILES CONFIGURE_DEPENDS ${CMAKE_SOURCE_DIR}/shaders/*)
+
+set(COPY_STAMP ${CMAKE_CURRENT_BINARY_DIR}/.assets_shaders_copied)
+
+add_custom_command(
+    OUTPUT ${COPY_STAMP}
     COMMAND ${CMAKE_COMMAND} -E copy_directory
             ${CMAKE_SOURCE_DIR}/assets $<TARGET_FILE_DIR:main>
     COMMAND ${CMAKE_COMMAND} -E copy_directory
             ${CMAKE_SOURCE_DIR}/shaders $<TARGET_FILE_DIR:main>/shaders
+    COMMAND ${CMAKE_COMMAND} -E touch ${COPY_STAMP}
+    DEPENDS ${ASSET_FILES} ${SHADER_FILES}
     COMMENT "Copying assets and shaders to build directory")
+
+add_custom_target(copy_assets_shaders ALL DEPENDS ${COPY_STAMP})
+add_dependencies(copy_assets_shaders main)
