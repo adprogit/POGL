@@ -1,0 +1,18 @@
+# Normalize all text files to LF in the repository.
+* text=auto eol=lf
+
+# Source / text files (explicit, for clarity)
+*.cc   text eol=lf
+*.cpp  text eol=lf
+*.hh   text eol=lf
+*.h    text eol=lf
+*.shd  text eol=lf
+*.obj  text eol=lf
+*.txt  text eol=lf
+*.md   text eol=lf
+
+# Binary assets (never touch line endings)
+*.tga  binary
+*.png  binary
+*.jpg  binary
+*.jpeg binary
