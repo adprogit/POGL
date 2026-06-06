@@ -165,6 +165,10 @@ void PostPass::execute(const RenderContext& ctx)
     glDisable(GL_CULL_FACE);
     TEST_OPENGL_ERROR();
     prog_.use();
+    prog_.mat4vf("view", ctx.view);
+    prog_.mat4vf("proj", ctx.proj);
+    prog_.init_3f("sun_dir", ctx.sun_dir);
+    prog_.init_3f("sun_color", ctx.sun_color);
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, ctx.scene_color_tex);
     TEST_OPENGL_ERROR();

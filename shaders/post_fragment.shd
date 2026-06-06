@@ -1,9 +1,41 @@
 #version 410
 in vec2 uv;
 uniform sampler2D scene_tex;
+uniform mat4 view;
+uniform mat4 proj;
+uniform vec3 sun_dir;
+uniform vec3 sun_color;
 out vec4 output_color;
+
+const int   NUM_SAMPLES = 100;
+const float DENSITY  = 0.9;   // longueur des rayons (0..1)
+const float DECAY    = 0.96;  // attenuation par pas
+const float WEIGHT   = 0.5;
+const float EXPOSURE = 0.25;  // intensite globale
+
 void main() {
-    vec3 c = texture(scene_tex, uv).rgb;
+    vec3 scene = texture(scene_tex, uv).rgb;
+    vec3 rays  = vec3(0.0);
+
+    // Position du soleil en espace ecran (directionnel -> w = 0).
+    vec4 sclip = proj * view * vec4(sun_dir, 0.0);
+    if (sclip.w > 0.0) {                       // soleil devant la camera
+        vec2 sun_uv = (sclip.xy / sclip.w) * 0.5 + 0.5;
+        vec2 delta  = (uv - sun_uv) * (DENSITY / float(NUM_SAMPLES));
+        vec2 coord  = uv;
+        float illum = 1.0;
+        for (int i = 0; i < NUM_SAMPLES; ++i) {
+            coord -= delta;
+            vec3 s = texture(scene_tex, coord).rgb;
+            // On ne garde que ce qui depasse 1.0 (le disque solaire HDR).
+            float bright = max(0.0, max(max(s.r, s.g), s.b) - 1.0);
+            rays  += s * bright * illum * WEIGHT;
+            illum *= DECAY;
+        }
+        rays *= EXPOSURE;
+    }
+
+    vec3 c = scene + rays * sun_color;
     c = pow(c, vec3(1.0 / 1.7  ));   // gamma
     output_color = vec4(c, 1.0);
 }
