@@ -62,7 +62,7 @@ void ForestPass::execute(const RenderContext& ctx)
         outline_.mat4vf("model_view_matrix", mv);
         outline_.mat4vf("projection_matrix", ctx.proj);
         glUniform1f(glGetUniformLocation(outline_.prog_id(), "outline_thickness"),
-                    0.08f);
+                    0.03f);
         glBindVertexArray(trunk_.vao_id());
         glDrawArrays(GL_TRIANGLES, 0, trunk_v_.size() / 3);
 
