@@ -1,0 +1,33 @@
+#version 410
+
+in vec3 frag_position;   // espace camera
+in vec3 frag_normal;     // espace camera
+in vec2 uv_;
+
+uniform vec3 sun_dir;
+uniform vec3 sun_color;
+uniform vec3 albedo;            // couleur de base du materiau (cel-shade)
+uniform sampler2D texture_sampler;
+uniform sampler2D lighting_sampler;   // rampe toon discrete
+uniform mat4 view_matrix;
+
+out vec4 output_color;
+
+void main()
+{
+    vec3 N = normalize(frag_normal);
+    vec3 L = normalize(mat3(view_matrix) * sun_dir);
+    float NdotL = max(dot(N, L), 0.0);
+
+    // Eclairage quantifie par la rampe toon.
+    vec3 ramp  = texture(lighting_sampler, vec2(NdotL, 0.5)).rgb;
+    vec3 color = albedo * ramp * sun_color;
+
+    // Lisere sombre sur les bords pour le look cel.
+    vec3 viewDir = normalize(-frag_position);
+    float rim = 1.0 - max(dot(N, viewDir), 0.0);
+    float edge = smoothstep(0.7, 0.95, rim);
+    color = mix(color, vec3(0.0), edge * 0.5);
+
+    output_color = vec4(color, 1.0);
+}

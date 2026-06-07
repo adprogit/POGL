@@ -157,6 +157,71 @@ void GrassPass::execute(const RenderContext& ctx)
     }
 }
 
+void ModelPass::execute(const RenderContext& ctx)
+{
+    glEnable(GL_CULL_FACE);
+    TEST_OPENGL_ERROR();
+    glCullFace(GL_BACK);
+    TEST_OPENGL_ERROR();
+
+    mygl::matrix4 mv = ctx.view * model_;
+
+    prog_.use();
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, prog_.texture_id());
+    TEST_OPENGL_ERROR();
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_2D, prog_.lighting_id());
+    TEST_OPENGL_ERROR();
+
+    prog_.mat4vf("model_view_matrix", mv);
+    prog_.mat4vf("view_matrix", ctx.view);
+    prog_.mat4vf("projection_matrix", ctx.proj);
+    prog_.init_3f("sun_dir", ctx.sun_dir);
+    prog_.init_3f("sun_color", ctx.sun_color);
+
+    glBindVertexArray(prog_.vao_id());
+    TEST_OPENGL_ERROR();
+    glDrawArrays(GL_TRIANGLES, 0, verts_.size() / 3);
+    TEST_OPENGL_ERROR();
+}
+
+void GltfScenePass::execute(const RenderContext& ctx)
+{
+    glEnable(GL_CULL_FACE);
+    TEST_OPENGL_ERROR();
+    glCullFace(GL_BACK);
+    TEST_OPENGL_ERROR();
+
+    mygl::matrix4 mv = ctx.view * model_;
+
+    for (size_t i = 0; i < progs_.size(); i++)
+    {
+        program& p = progs_[i];
+        const GltfSubmesh& m = meshes_[i];
+
+        p.use();
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, p.texture_id());
+        TEST_OPENGL_ERROR();
+        glActiveTexture(GL_TEXTURE1);
+        glBindTexture(GL_TEXTURE_2D, p.lighting_id());
+        TEST_OPENGL_ERROR();
+
+        p.mat4vf("model_view_matrix", mv);
+        p.mat4vf("view_matrix", ctx.view);
+        p.mat4vf("projection_matrix", ctx.proj);
+        p.init_3f("sun_dir", ctx.sun_dir);
+        p.init_3f("sun_color", ctx.sun_color);
+        p.init_3f("albedo", mygl::vector3(m.color[0], m.color[1], m.color[2]));
+
+        glBindVertexArray(p.vao_id());
+        TEST_OPENGL_ERROR();
+        glDrawArrays(GL_TRIANGLES, 0, m.vertices.size() / 3);
+        TEST_OPENGL_ERROR();
+    }
+}
+
 void PostPass::execute(const RenderContext& ctx)
 {
     glDisable(GL_DEPTH_TEST);

@@ -5,6 +5,8 @@ set(CMAKE_CXX_STANDARD 20)
 add_library(mygl SHARED matrix4.cc helpers.cc init.cc shaders.cc obj_loader.cc geometry.cc camera.cc framebuffer.cc render_pass.cc renderer.cc img/image.cpp img/image_io.cpp)
 target_include_directories(mygl PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_compile_options(mygl PRIVATE -Wall -Wextra -Werror -pedantic)
+find_package(assimp REQUIRED)
+target_link_libraries(mygl PUBLIC assimp::assimp)
 
 if(APPLE)
     target_include_directories(mygl PUBLIC /opt/homebrew/include)

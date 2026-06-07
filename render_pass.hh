@@ -3,6 +3,7 @@
 #include <vector>
 
 #include "matrix4.hh"
+#include "obj_loader.hh"
 #include "scene.hh"
 #include "shaders.hh"
 
@@ -99,6 +100,46 @@ private:
     program& prog_;
     const std::vector<TreeInstance>& blades_;
     const std::vector<GLfloat>& mesh_v_;
+};
+
+// Modele unique (ex. scene glTF chargee via load_gltf) : un seul mesh
+// cel-shade, dessine avec une transform fixe (position/echelle/rotation).
+class ModelPass : public RenderPass
+{
+public:
+    ModelPass(program& prog, const std::vector<GLfloat>& verts,
+              const mygl::matrix4& model)
+        : prog_(prog)
+        , verts_(verts)
+        , model_(model)
+    {}
+    void execute(const RenderContext& ctx) override;
+
+private:
+    program& prog_;
+    const std::vector<GLfloat>& verts_;
+    mygl::matrix4 model_;
+};
+
+// Scene glTF multi-materiaux (ex. `whole_forest`) : un programme cel-shade par
+// submesh, dessine avec une transform commune. La couleur de base de chaque
+// submesh est envoyee en uniforme `albedo`.
+class GltfScenePass : public RenderPass
+{
+public:
+    GltfScenePass(std::vector<program>& progs,
+                  const std::vector<GltfSubmesh>& meshes,
+                  const mygl::matrix4& model)
+        : progs_(progs)
+        , meshes_(meshes)
+        , model_(model)
+    {}
+    void execute(const RenderContext& ctx) override;
+
+private:
+    std::vector<program>& progs_;
+    const std::vector<GltfSubmesh>& meshes_;
+    mygl::matrix4 model_;
 };
 
 // Post-processing : echantillonne la couleur de scene vers le framebuffer 0.
