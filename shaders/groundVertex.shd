@@ -5,7 +5,9 @@ in vec2 uv;
 uniform mat4 model_view_matrix;
 uniform mat4 projection_matrix;
 out vec3 frag_normal_world;
+out vec3 frag_pos;
 void main() {
         frag_normal_world = normalFlat;
+        frag_pos = position;
         gl_Position = projection_matrix * model_view_matrix * vec4(position, 1.0);
 }

@@ -17,9 +17,17 @@ void main()
 {
     vec3 N = normalize(frag_normal);
     vec3 L = normalize(mat3(view_matrix) * sun_dir);
-    float NdotL = max(dot(N, L), 0.0);
 
-    vec3 ramp   = texture(lighting_sampler, vec2(NdotL, 0.5)).rgb;
-    vec3 albedo = vec3(51.0/255.0, 88.0/255.0, 0.0);
-     output_color = vec4(albedo * ramp * sun_color, 1.0);
+    // Wrap diffuse pour eviter le noir total dans les ombres.
+    float wrap  = 0.4;
+    float NdotL = max((dot(N, L) + wrap) / (1.0 + wrap), 0.0);
+
+    // La toon-ramp encode deja la couleur de l'objet discretisee en paliers :
+    // on l'utilise directement comme albedo (gris pour les rochers, etc.),
+    // sans teinte verte codee en dur.
+    vec3 ramp = texture(lighting_sampler, vec2(NdotL, 0.5)).rgb;
+
+    // Teinte par la lumiere du soleil, avec un plancher ambiant.
+    vec3 lit = ramp * mix(vec3(0.35), sun_color, NdotL);
+    output_color = vec4(lit, 1.0);
 }

@@ -28,8 +28,9 @@ std::vector<GLfloat> g_verts, g_normals, g_uv;
 Renderer g_renderer;
 program post_program;
 
-mygl::vector3 g_sun_dir(0.3f, 0.7f, 0.4f);
-mygl::vector3 g_sun_color(1.0f, 0.95f, 0.85f);
+// Ambiance crepusculaire : soleil bas sur l'horizon, lumiere chaude/orangee.
+mygl::vector3 g_sun_dir(0.55f, 0.12f, 0.82f);
+mygl::vector3 g_sun_color(1.0f, 0.55f, 0.28f);
 
 program trunk_program;
 program leaves_program;
@@ -39,6 +40,16 @@ std::vector<GLfloat> leaf_v, leaf_n, leaf_uv;
 program grass_program;
 std::vector<GLfloat> grass_v, grass_n, grass_uv;
 std::vector<TreeInstance> grass;
+
+// Decorations cel-shade instanciees (buissons, fougeres, rochers, champignons).
+// Chacune reutilise GrassPass : meme pipeline mesh .obj + toon ramp.
+struct Decor
+{
+    program prog;
+    std::vector<GLfloat> v, n, uv;
+    std::vector<TreeInstance> items;
+};
+Decor bush, fern, rock, mush;
 
 GLuint sky_vao;
 const int win_w = 1024, win_h = 1024;
@@ -149,6 +160,7 @@ int main(int argc, char* argv[])
     trunk_program.init_single_texture(bark, bark_ramp);
     leaves_program.init_single_texture(leaf_ramp, leaf_ramp);
 
+
     // --- Herbe : meme logique que les feuilles (mesh .obj + toon ramp vert) ---
     if (!load_obj(asset("grass.obj").c_str(), grass_v, grass_n, grass_uv))
     {
@@ -161,6 +173,30 @@ int main(int argc, char* argv[])
     grass_program.init_single_texture(grass_ramp, grass_ramp);
     grass = make_scatter(400, 90.0f, 0.6f, 1.1f, 7);
 
+    // --- Decorations : meme logique que l'herbe, couleurs toon dediees -------
+    auto setup_decor = [&](Decor& d, const char* obj, int count, float spread,
+                           float smin, float smax, unsigned seed,
+                           unsigned char r, unsigned char g, unsigned char b) {
+        d.prog = init_shaders(asset("shaders/vertex.shd"),
+                              asset("shaders/leaves_fragment.shd"));
+        if (!load_obj(asset(obj).c_str(), d.v, d.n, d.uv))
+        {
+            std::cerr << "Could not load " << obj << std::endl;
+            return false;
+        }
+        d.prog.init_object(d.v, d.n, d.uv);
+        tifo::rgb24_image* ramp = tifo::generate_toon_ramp_from_color(r, g, b, 4);
+        d.prog.init_single_texture(ramp, ramp);
+        d.items = make_scatter(count, spread, smin, smax, seed);
+        return true;
+    };
+
+    if (!setup_decor(bush, "Bush_Common.obj", 22, 80.0f, 0.9f, 1.6f, 11, 46, 102, 28)
+        || !setup_decor(fern, "Fern_1.obj", 45, 85.0f, 0.6f, 1.1f, 23, 70, 132, 48)
+        || !setup_decor(rock, "Rock_Medium_1.obj", 16, 80.0f, 0.7f, 1.4f, 31, 112, 110, 120)
+        || !setup_decor(mush, "Mushroom_Common.obj", 18, 70.0f, 0.5f, 0.9f, 47, 168, 78, 58))
+        return 1;
+
     geometry::ground(g_verts, g_normals, g_uv, 200.0f);
     ground_program.init_object(g_verts, g_normals, g_uv);
     TEST_OPENGL_ERROR();
@@ -168,13 +204,21 @@ int main(int argc, char* argv[])
     // Assemblage de la pipeline : ordre des passes dans le FBO, puis post.
     static SkyPass sky_pass(sky_program, sky_vao);
     static GroundPass ground_pass(ground_program, g_verts);
-    static GrassPass grass_pass(grass_program, grass, grass_v);
+    static GrassPass g	rass_pass(grass_program, grass, grass_v);
+    static GrassPass bush_pass(bush.prog, bush.items, bush.v);
+    static GrassPass fern_pass(fern.prog, fern.items, fern.v);
+    static GrassPass rock_pass(rock.prog, rock.items, rock.v);
+    static GrassPass mush_pass(mush.prog, mush.items, mush.v);
     static ForestPass forest_pass(q_program, trunk_program, leaves_program,
                                   trees, trunk_v, leaf_v);
     static PostPass post_pass(post_program, sky_vao);
     g_renderer.add_scene_pass(&sky_pass);
     g_renderer.add_scene_pass(&ground_pass);
     g_renderer.add_scene_pass(&grass_pass);
+    g_renderer.add_scene_pass(&bush_pass);
+    g_renderer.add_scene_pass(&fern_pass);
+    g_renderer.add_scene_pass(&rock_pass);
+    g_renderer.add_scene_pass(&mush_pass);
     g_renderer.add_scene_pass(&forest_pass);
     g_renderer.set_post_pass(&post_pass);
 
