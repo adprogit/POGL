@@ -6,10 +6,6 @@ add_library(mygl SHARED matrix4.cc helpers.cc init.cc shaders.cc obj_loader.cc g
 target_include_directories(mygl PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_compile_options(mygl PRIVATE -Wall -Wextra -Werror -pedantic)
 
-# Assimp pour charger les modèles glTF/FBX (proj2/obj).
-find_package(assimp REQUIRED)
-target_link_libraries(mygl PUBLIC assimp::assimp)
-
 if(APPLE)
     target_include_directories(mygl PUBLIC /opt/homebrew/include)
     find_library(OPENGL_FRAMEWORK OpenGL REQUIRED)

@@ -204,7 +204,7 @@ int main(int argc, char* argv[])
     // Assemblage de la pipeline : ordre des passes dans le FBO, puis post.
     static SkyPass sky_pass(sky_program, sky_vao);
     static GroundPass ground_pass(ground_program, g_verts);
-    static GrassPass g	rass_pass(grass_program, grass, grass_v);
+    static GrassPass grass_pass(grass_program, grass, grass_v);
     static GrassPass bush_pass(bush.prog, bush.items, bush.v);
     static GrassPass fern_pass(fern.prog, fern.items, fern.v);
     static GrassPass rock_pass(rock.prog, rock.items, rock.v);
