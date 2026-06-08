@@ -14,7 +14,7 @@ const float DECAY    = 0.96;  // attenuation par pas
 const float WEIGHT   = 0.5;
 const float EXPOSURE = 0.25;  // intensite globale
 
-// --- Contours (edge detection sur le depth) ---
+// --- Contours (edge detection depth + normales) ---
 // NEAR/FAR doivent correspondre au frustum de la camera (camera.cc).
 const float NEAR = 1.0;
 const float FAR  = 250.0;
@@ -23,11 +23,43 @@ const float THICKNESS = 1.0;  // ecart d'echantillonnage, en texels
 const float EDGE_LOW  = 0.12; // seuil bas  (commence a tracer)
 const float EDGE_HIGH = 0.35; // seuil haut (contour plein)
 
+// Contours par les normales : capte les aretes/plis ou la profondeur est
+// continue mais la surface se replie (ce que le depth seul ne voit pas).
+// Seuils sur 1 - dot(N, voisin) somme sur les 4 voisins.
+const float NORMAL_LOW  = 0.30;
+const float NORMAL_HIGH = 0.80;
+
+// Inverse de la projection, initialise dans main (reconstruction view-space).
+mat4 inv_proj;
+
 // Depth non-lineaire [0,1] -> distance vue lineaire [NEAR, FAR].
 float linearize(float d)
 {
     float z = d * 2.0 - 1.0;                       // [0,1] -> NDC [-1,1]
     return (2.0 * NEAR * FAR) / (FAR + NEAR - z * (FAR - NEAR));
+}
+
+// uv + depth -> position en espace camera (via l'inverse de la projection).
+vec3 view_pos(vec2 c)
+{
+    float d = texture(depth_tex, c).r;
+    vec4 ndc = vec4(c * 2.0 - 1.0, d * 2.0 - 1.0, 1.0);
+    vec4 v = inv_proj * ndc;
+    return v.xyz / v.w;
+}
+
+// Normale view-space reconstruite depuis le depth. Sur chaque axe on garde le
+// voisin le plus proche en z pour ne pas "baver" au-dessus des silhouettes.
+vec3 reconstruct_normal(vec2 c, vec2 texel)
+{
+    vec3 P  = view_pos(c);
+    vec3 Pr = view_pos(c + vec2(texel.x, 0.0));
+    vec3 Pl = view_pos(c - vec2(texel.x, 0.0));
+    vec3 Pu = view_pos(c + vec2(0.0, texel.y));
+    vec3 Pd = view_pos(c - vec2(0.0, texel.y));
+    vec3 ddx = abs(Pr.z - P.z) < abs(P.z - Pl.z) ? (Pr - P) : (P - Pl);
+    vec3 ddy = abs(Pu.z - P.z) < abs(P.z - Pd.z) ? (Pu - P) : (P - Pd);
+    return normalize(cross(ddx, ddy));
 }
 
 // Force du contour au pixel courant : somme des sauts de profondeur avec
@@ -44,7 +76,23 @@ float edge_strength()
     return e / dc;
 }
 
+// Force du contour par les normales : somme de 1 - dot(N_centre, N_voisin)
+// sur les 4 voisins. Eleve sur une arete, ~0 sur une surface lisse.
+float normal_edge_strength()
+{
+    vec2 texel = THICKNESS / vec2(textureSize(depth_tex, 0));
+    vec3 nc = reconstruct_normal(uv, texel);
+    float e = 0.0;
+    e += 1.0 - dot(nc, reconstruct_normal(uv + vec2( texel.x, 0.0), texel));
+    e += 1.0 - dot(nc, reconstruct_normal(uv + vec2(-texel.x, 0.0), texel));
+    e += 1.0 - dot(nc, reconstruct_normal(uv + vec2(0.0,  texel.y), texel));
+    e += 1.0 - dot(nc, reconstruct_normal(uv + vec2(0.0, -texel.y), texel));
+    return e;
+}
+
 void main() {
+    inv_proj = inverse(proj);
+
     vec3 scene = texture(scene_tex, uv).rgb;
     vec3 rays  = vec3(0.0);
 
@@ -69,8 +117,11 @@ void main() {
     vec3 c = scene + rays * sun_color;
     c = pow(c, vec3(1.0 / 1.7  ));   // gamma
 
-    // Contours : assombrit les pixels en bordure de discontinuite de profondeur.
-    float outline = smoothstep(EDGE_LOW, EDGE_HIGH, edge_strength());
+    // Contours : discontinuite de profondeur (silhouettes) OU cassure de
+    // normale (aretes/plis internes). On garde le plus marque des deux.
+    float depth_o  = smoothstep(EDGE_LOW,   EDGE_HIGH,   edge_strength());
+    float normal_o = smoothstep(NORMAL_LOW, NORMAL_HIGH, normal_edge_strength());
+    float outline  = max(depth_o, normal_o);
     c = mix(c, OUTLINE_COLOR, outline);
 
     output_color = vec4(c, 1.0);
