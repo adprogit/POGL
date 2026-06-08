@@ -13,11 +13,14 @@ const float DENSITY  = 0.9;   // longueur des rayons (0..1)
 const float DECAY    = 0.96;  // attenuation par pas
 const float WEIGHT   = 0.5;
 const float EXPOSURE = 0.25;  // intensite globale
+const float GAMMA    = 1.7;   // correction gamma appliquee en fin de passe
 
 // --- Contours (edge detection depth + normales) ---
 // NEAR/FAR doivent correspondre au frustum de la camera (camera.cc).
 const float NEAR = 1.0;
 const float FAR  = 250.0;
+// Couleur cible a l'ecran. Les contours etant mixes en lineaire (avant le
+// gamma de fin de passe), on la pre-corrige a l'usage : pow(OUTLINE_COLOR, GAMMA).
 const vec3  OUTLINE_COLOR = vec3(0.05, 0.05, 0.08);
 const float THICKNESS = 1.0;  // ecart d'echantillonnage, en texels
 const float EDGE_LOW  = 0.12; // seuil bas  (commence a tracer)
@@ -94,6 +97,15 @@ void main() {
     inv_proj = inverse(proj);
 
     vec3 scene = texture(scene_tex, uv).rgb;
+
+    // Contours appliques sur la scene AVANT les god-rays : discontinuite de
+    // profondeur (silhouettes) OU cassure de normale (aretes/plis internes).
+    // On garde le plus marque des deux. Les rayons passeront par-dessus.
+    float depth_o  = smoothstep(EDGE_LOW,   EDGE_HIGH,   edge_strength());
+    float normal_o = smoothstep(NORMAL_LOW, NORMAL_HIGH, normal_edge_strength());
+    float outline  = max(depth_o, normal_o);
+    scene = mix(scene, pow(OUTLINE_COLOR, vec3(GAMMA)), outline);
+
     vec3 rays  = vec3(0.0);
 
     // Position du soleil en espace ecran (directionnel -> w = 0).
@@ -115,14 +127,7 @@ void main() {
     }
 
     vec3 c = scene + rays * sun_color;
-    c = pow(c, vec3(1.0 / 1.7  ));   // gamma
-
-    // Contours : discontinuite de profondeur (silhouettes) OU cassure de
-    // normale (aretes/plis internes). On garde le plus marque des deux.
-    float depth_o  = smoothstep(EDGE_LOW,   EDGE_HIGH,   edge_strength());
-    float normal_o = smoothstep(NORMAL_LOW, NORMAL_HIGH, normal_edge_strength());
-    float outline  = max(depth_o, normal_o);
-    c = mix(c, OUTLINE_COLOR, outline);
+    c = pow(c, vec3(1.0 / GAMMA));   // gamma
 
     output_color = vec4(c, 1.0);
 }
