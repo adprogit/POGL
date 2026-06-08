@@ -9,40 +9,30 @@ uniform vec3 sun_color;
 out vec4 output_color;
 
 const int   NUM_SAMPLES = 100;
-const float DENSITY  = 0.9;   // longueur des rayons (0..1)
-const float DECAY    = 0.96;  // attenuation par pas
+const float DENSITY  = 0.9;
+const float DECAY    = 0.96;
 const float WEIGHT   = 0.5;
-const float EXPOSURE = 0.25;  // intensite globale
-const float GAMMA    = 1.7;   // correction gamma appliquee en fin de passe
+const float EXPOSURE = 0.25;
+const float GAMMA    = 1.7;
 
-// --- Contours (edge detection depth + normales) ---
-// NEAR/FAR doivent correspondre au frustum de la camera (camera.cc).
 const float NEAR = 1.0;
 const float FAR  = 250.0;
-// Couleur cible a l'ecran. Les contours etant mixes en lineaire (avant le
-// gamma de fin de passe), on la pre-corrige a l'usage : pow(OUTLINE_COLOR, GAMMA).
 const vec3  OUTLINE_COLOR = vec3(0.05, 0.05, 0.08);
-const float THICKNESS = 1.0;  // ecart d'echantillonnage, en texels
-const float EDGE_LOW  = 0.12; // seuil bas  (commence a tracer)
-const float EDGE_HIGH = 0.35; // seuil haut (contour plein)
+const float THICKNESS = 1.0;
+const float EDGE_LOW  = 0.12;
+const float EDGE_HIGH = 0.35;
 
-// Contours par les normales : capte les aretes/plis ou la profondeur est
-// continue mais la surface se replie (ce que le depth seul ne voit pas).
-// Seuils sur 1 - dot(N, voisin) somme sur les 4 voisins.
 const float NORMAL_LOW  = 0.30;
 const float NORMAL_HIGH = 0.80;
 
-// Inverse de la projection, initialise dans main (reconstruction view-space).
 mat4 inv_proj;
 
-// Depth non-lineaire [0,1] -> distance vue lineaire [NEAR, FAR].
 float linearize(float d)
 {
-    float z = d * 2.0 - 1.0;                       // [0,1] -> NDC [-1,1]
+    float z = d * 2.0 - 1.0;
     return (2.0 * NEAR * FAR) / (FAR + NEAR - z * (FAR - NEAR));
 }
 
-// uv + depth -> position en espace camera (via l'inverse de la projection).
 vec3 view_pos(vec2 c)
 {
     float d = texture(depth_tex, c).r;
@@ -51,8 +41,6 @@ vec3 view_pos(vec2 c)
     return v.xyz / v.w;
 }
 
-// Normale view-space reconstruite depuis le depth. Sur chaque axe on garde le
-// voisin le plus proche en z pour ne pas "baver" au-dessus des silhouettes.
 vec3 reconstruct_normal(vec2 c, vec2 texel)
 {
     vec3 P  = view_pos(c);
@@ -65,8 +53,6 @@ vec3 reconstruct_normal(vec2 c, vec2 texel)
     return normalize(cross(ddx, ddy));
 }
 
-// Force du contour au pixel courant : somme des sauts de profondeur avec
-// les 4 voisins, normalisee par la profondeur (independante de la distance).
 float edge_strength()
 {
     vec2 texel = THICKNESS / vec2(textureSize(depth_tex, 0));
@@ -79,8 +65,6 @@ float edge_strength()
     return e / dc;
 }
 
-// Force du contour par les normales : somme de 1 - dot(N_centre, N_voisin)
-// sur les 4 voisins. Eleve sur une arete, ~0 sur une surface lisse.
 float normal_edge_strength()
 {
     vec2 texel = THICKNESS / vec2(textureSize(depth_tex, 0));
@@ -98,9 +82,6 @@ void main() {
 
     vec3 scene = texture(scene_tex, uv).rgb;
 
-    // Contours appliques sur la scene AVANT les god-rays : discontinuite de
-    // profondeur (silhouettes) OU cassure de normale (aretes/plis internes).
-    // On garde le plus marque des deux. Les rayons passeront par-dessus.
     float depth_o  = smoothstep(EDGE_LOW,   EDGE_HIGH,   edge_strength());
     float normal_o = smoothstep(NORMAL_LOW, NORMAL_HIGH, normal_edge_strength());
     float outline  = max(depth_o, normal_o);
@@ -108,9 +89,8 @@ void main() {
 
     vec3 rays  = vec3(0.0);
 
-    // Position du soleil en espace ecran (directionnel -> w = 0).
     vec4 sclip = proj * view * vec4(sun_dir, 0.0);
-    if (sclip.w > 0.0) {                       // soleil devant la camera
+    if (sclip.w > 0.0) {
         vec2 sun_uv = (sclip.xy / sclip.w) * 0.5 + 0.5;
         vec2 delta  = (uv - sun_uv) * (DENSITY / float(NUM_SAMPLES));
         vec2 coord  = uv;
@@ -118,7 +98,6 @@ void main() {
         for (int i = 0; i < NUM_SAMPLES; ++i) {
             coord -= delta;
             vec3 s = texture(scene_tex, coord).rgb;
-            // On ne garde que ce qui depasse 1.0 (le disque solaire HDR).
             float bright = max(0.0, max(max(s.r, s.g), s.b) - 1.0);
             rays  += s * bright * illum * WEIGHT;
             illum *= DECAY;
@@ -127,7 +106,7 @@ void main() {
     }
 
     vec3 c = scene + rays * sun_color;
-    c = pow(c, vec3(1.0 / GAMMA));   // gamma
+    c = pow(c, vec3(1.0 / GAMMA));
 
     output_color = vec4(c, 1.0);
 }
