@@ -242,77 +242,12 @@ namespace tifo
         return img;
     }
 
-    rgb24_image* generate_toon_ramp_from_color(uint8_t r, uint8_t g, uint8_t b,
-                                               int levels)
+    // Builds a lightness-only toon ramp: a 256x1 grayscale texture where the
+    // stepped lighting factor (in [0, 1]) is written equally to R, G and B.
+    // The shader supplies the colour via the albedo and multiplies by this
+    // factor, so the ramp must stay neutral (no hue/saturation baked in).
+    static rgb24_image* build_lightness_ramp(int levels, float min_shade)
     {
-        std::vector<uint8_t> hsv = convertisseur_rgb_hsv({ r, g, b });
-        uint8_t dom_h = hsv[0], dom_s = hsv[1], dom_v = hsv[2];
-
-        rgb24_image* ramp = new rgb24_image(256, 1);
-        if (levels < 2)
-            levels = 2;
-
-        for (int x = 0; x < 256; x++)
-        {
-            float t = std::floor((x / 255.0f) * levels) / (float)(levels - 1);
-            if (t > 1.0f)
-                t = 1.0f;
-
-            float vf = dom_v * (0.4f + 0.7f * t);
-            float sf = dom_s * (1.15f - 0.2f * t);
-            uint8_t v = (uint8_t)std::min(255.0f, vf);
-            uint8_t s = (uint8_t)std::min(255.0f, sf);
-
-            std::vector<uint8_t> rgb = hsv_to_rgb({ dom_h, s, v });
-            ramp->pixels[x * 3 + 0] = rgb[0];
-            ramp->pixels[x * 3 + 1] = rgb[1];
-            ramp->pixels[x * 3 + 2] = rgb[2];
-        }
-        return ramp;
-    }
-    rgb24_image* generate_toon_ramp(rgb24_image* texture, int levels)
-    {
-        if (!texture || texture->length == 0)
-        {
-            return new rgb24_image(256, 1);
-        }
-
-        std::vector<gray8_image*>* hsv = hsv_segmentation(texture);
-        if (!hsv || hsv->size() < 3)
-        {
-            delete hsv;
-            return new rgb24_image(256, 1);
-        }
-
-        gray8_image* H = hsv->at(0);
-        gray8_image* S = hsv->at(1);
-        gray8_image* V = hsv->at(2);
-
-        histogram_1d* histo_h = get_histo(*H);
-        int dom_h = 0;
-        unsigned int best = 0;
-
-        for (int i = 0; i < 256; i++)
-        {
-            if (histo_h->histogram[i] > best)
-            {
-                best = histo_h->histogram[i];
-                dom_h = i;
-            }
-        }
-
-        unsigned long long sum_s = 0, sum_v = 0;
-        std::size_t n = H->length;
-
-        for (std::size_t i = 0; i < n; i++)
-        {
-            sum_s += S->pixels[i];
-            sum_v += V->pixels[i];
-        }
-
-        uint8_t dom_s = (n > 0) ? (uint8_t)(sum_s / n) : 0;
-        uint8_t dom_v = (n > 0) ? (uint8_t)(sum_v / n) : 0;
-
         rgb24_image* ramp = new rgb24_image(256, 1);
         if (levels < 2)
             levels = 2;
@@ -327,31 +262,34 @@ namespace tifo
             if (quantized_t > 1.0f)
                 quantized_t = 1.0f;
 
-            float min_shade = 0.2f;
-            float current_v =
-                dom_v * (min_shade + (1.0f - min_shade) * quantized_t);
-            float current_s = dom_s * (1.2f - 0.2f * quantized_t);
-
-            uint8_t s_final = (uint8_t)std::min(255.0f, current_s);
-            uint8_t v_final = (uint8_t)std::min(255.0f, current_v);
-
-            std::vector<uint8_t> hsv_pixel = { (uint8_t)dom_h, s_final,
-                                               v_final };
-            std::vector<uint8_t> rgb_pixel = hsv_to_rgb(hsv_pixel);
+            float factor = min_shade + (1.0f - min_shade) * quantized_t;
+            uint8_t l = (uint8_t)std::min(255.0f, factor * 255.0f);
 
             std::size_t idx = x * 3;
-            ramp->pixels[idx + 0] = rgb_pixel[0];
-            ramp->pixels[idx + 1] = rgb_pixel[1];
-            ramp->pixels[idx + 2] = rgb_pixel[2];
+            ramp->pixels[idx + 0] = l;
+            ramp->pixels[idx + 1] = l;
+            ramp->pixels[idx + 2] = l;
         }
-
-        delete histo_h;
-        delete H;
-        delete S;
-        delete V;
-        delete hsv;
-
         return ramp;
+    }
+
+    rgb24_image* generate_toon_ramp_from_color(uint8_t r, uint8_t g, uint8_t b,
+                                               int levels)
+    {
+        // Lightness-only ramp: the colour is provided by the albedo in the
+        // shader, so the input RGB is no longer baked into the ramp.
+        (void)r;
+        (void)g;
+        (void)b;
+        return build_lightness_ramp(levels, 0.4f);
+    }
+
+    rgb24_image* generate_toon_ramp(rgb24_image* texture, int levels)
+    {
+        // Lightness-only ramp: the colour comes from the texture sampled in the
+        // shader, so the texture is not inspected here anymore.
+        (void)texture;
+        return build_lightness_ramp(levels, 0.2f);
     }
 
 
