@@ -20,7 +20,6 @@
 std::vector<TreeInstance> trees;
 
 program g_program;
-program q_program;
 program sky_program;
 program ground_program;
 std::vector<GLfloat> g_verts, g_normals, g_uv;
@@ -93,8 +92,6 @@ int main(int argc, char* argv[])
                                      asset("shaders/leaves_fragment.shd"));
         g_program = init_shaders(asset("shaders/vertex.shd"),
                                  asset("shaders/fragment.shd"));
-        q_program = init_shaders(asset("shaders/outlineVertexShader.shd"),
-                                 asset("shaders/outlineFragmentShader.shd"));
         sky_program = init_shaders(asset("shaders/sky_vertex.shd"),
                                    asset("shaders/sky_fragment.shd"));
         ground_program = init_shaders(asset("shaders/groundVertex.shd"),
@@ -114,9 +111,6 @@ int main(int argc, char* argv[])
                   << g_program.get_log() << std::endl;
         return 1;
     }
-    std::cerr << "q ready: " << q_program.is_ready() << "\n";
-    if (!q_program.is_ready())
-        std::cerr << q_program.get_log() << "\n";
     glGenVertexArrays(1, &sky_vao);
     if (!load_obj(asset("real_pine_bark.obj").c_str(), trunk_v, trunk_n,
                   trunk_uv))
@@ -169,8 +163,8 @@ int main(int argc, char* argv[])
     static SkyPass sky_pass(sky_program, sky_vao);
     static GroundPass ground_pass(ground_program, g_verts);
     static GrassPass grass_pass(grass_program, grass, grass_v);
-    static ForestPass forest_pass(q_program, trunk_program, leaves_program,
-                                  trees, trunk_v, leaf_v);
+    static ForestPass forest_pass(trunk_program, leaves_program, trees, trunk_v,
+                                  leaf_v);
     static PostPass post_pass(post_program, sky_vao);
     g_renderer.add_scene_pass(&sky_pass);
     g_renderer.add_scene_pass(&ground_pass);

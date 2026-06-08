@@ -1,6 +1,7 @@
 #version 410
 in vec2 uv;
 uniform sampler2D scene_tex;
+uniform sampler2D depth_tex;
 uniform mat4 view;
 uniform mat4 proj;
 uniform vec3 sun_dir;
@@ -12,6 +13,36 @@ const float DENSITY  = 0.9;   // longueur des rayons (0..1)
 const float DECAY    = 0.96;  // attenuation par pas
 const float WEIGHT   = 0.5;
 const float EXPOSURE = 0.25;  // intensite globale
+
+// --- Contours (edge detection sur le depth) ---
+// NEAR/FAR doivent correspondre au frustum de la camera (camera.cc).
+const float NEAR = 1.0;
+const float FAR  = 250.0;
+const vec3  OUTLINE_COLOR = vec3(0.05, 0.05, 0.08);
+const float THICKNESS = 1.0;  // ecart d'echantillonnage, en texels
+const float EDGE_LOW  = 0.12; // seuil bas  (commence a tracer)
+const float EDGE_HIGH = 0.35; // seuil haut (contour plein)
+
+// Depth non-lineaire [0,1] -> distance vue lineaire [NEAR, FAR].
+float linearize(float d)
+{
+    float z = d * 2.0 - 1.0;                       // [0,1] -> NDC [-1,1]
+    return (2.0 * NEAR * FAR) / (FAR + NEAR - z * (FAR - NEAR));
+}
+
+// Force du contour au pixel courant : somme des sauts de profondeur avec
+// les 4 voisins, normalisee par la profondeur (independante de la distance).
+float edge_strength()
+{
+    vec2 texel = THICKNESS / vec2(textureSize(depth_tex, 0));
+    float dc = linearize(texture(depth_tex, uv).r);
+    float e  = 0.0;
+    e += abs(linearize(texture(depth_tex, uv + vec2( texel.x, 0.0)).r) - dc);
+    e += abs(linearize(texture(depth_tex, uv + vec2(-texel.x, 0.0)).r) - dc);
+    e += abs(linearize(texture(depth_tex, uv + vec2(0.0,  texel.y)).r) - dc);
+    e += abs(linearize(texture(depth_tex, uv + vec2(0.0, -texel.y)).r) - dc);
+    return e / dc;
+}
 
 void main() {
     vec3 scene = texture(scene_tex, uv).rgb;
@@ -37,5 +68,10 @@ void main() {
 
     vec3 c = scene + rays * sun_color;
     c = pow(c, vec3(1.0 / 1.7  ));   // gamma
+
+    // Contours : assombrit les pixels en bordure de discontinuite de profondeur.
+    float outline = smoothstep(EDGE_LOW, EDGE_HIGH, edge_strength());
+    c = mix(c, OUTLINE_COLOR, outline);
+
     output_color = vec4(c, 1.0);
 }

@@ -15,6 +15,7 @@ struct RenderContext
     mygl::vector3 sun_color{ 0, 0, 0 };
     mygl::vector3 cam_pos{ 0, 0, 0 };
     GLuint scene_color_tex = 0; // rempli par le Renderer avant la passe post
+    GLuint scene_depth_tex = 0; // idem : depth pour la detection de contours
 };
 
 // Une etape de rendu. Chaque passe gere son propre etat GL et son draw.
@@ -57,16 +58,16 @@ private:
     const std::vector<GLfloat>& verts_;
 };
 
-// Foret : par instance, outline (inverted hull) + tronc + feuilles cel-shade.
+// Foret : par instance, tronc + feuilles cel-shade. Les contours sont traces
+// en post-processing (edge detection sur le depth), plus en inverted hull.
 class ForestPass : public RenderPass
 {
 public:
-    ForestPass(program& outline, program& trunk, program& leaves,
+    ForestPass(program& trunk, program& leaves,
                const std::vector<TreeInstance>& trees,
                const std::vector<GLfloat>& trunk_v,
                const std::vector<GLfloat>& leaf_v)
-        : outline_(outline)
-        , trunk_(trunk)
+        : trunk_(trunk)
         , leaves_(leaves)
         , trees_(trees)
         , trunk_v_(trunk_v)
@@ -75,7 +76,6 @@ public:
     void execute(const RenderContext& ctx) override;
 
 private:
-    program& outline_;
     program& trunk_;
     program& leaves_;
     const std::vector<TreeInstance>& trees_;

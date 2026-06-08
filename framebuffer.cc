@@ -26,14 +26,26 @@ void SceneFbo::init(int width, int height)
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
                            color_tex_, 0);
     TEST_OPENGL_ERROR();
-    glGenRenderbuffers(1, &depth_rbo_);
+    // Depth en texture (et non renderbuffer) pour pouvoir l'echantillonner
+    // dans la passe de post (detection de contours).
+    glGenTextures(1, &depth_tex_);
     TEST_OPENGL_ERROR();
-    glBindRenderbuffer(GL_RENDERBUFFER, depth_rbo_);
+    glBindTexture(GL_TEXTURE_2D, depth_tex_);
     TEST_OPENGL_ERROR();
-    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, width, height);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH24_STENCIL8, width, height, 0,
+                 GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8, NULL);
     TEST_OPENGL_ERROR();
-    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT,
-                              GL_RENDERBUFFER, depth_rbo_);
+    // NEAREST : on veut la valeur exacte du depth, pas une interpolation.
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    TEST_OPENGL_ERROR();
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    TEST_OPENGL_ERROR();
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    TEST_OPENGL_ERROR();
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    TEST_OPENGL_ERROR();
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT,
+                           GL_TEXTURE_2D, depth_tex_, 0);
     TEST_OPENGL_ERROR();
 
     if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)

@@ -35,6 +35,7 @@ void Renderer::render(RenderContext ctx)
     if (post_pass_)
     {
         ctx.scene_color_tex = fbo_.color_tex();
+        ctx.scene_depth_tex = fbo_.depth_tex();
         post_pass_->execute(ctx);
     }
 

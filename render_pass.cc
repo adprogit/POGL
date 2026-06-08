@@ -53,20 +53,10 @@ void ForestPass::execute(const RenderContext& ctx)
                             * mygl::scale(t.scale, t.scale, t.scale);
         mygl::matrix4 mv = ctx.view * model;
 
-        // --- OUTLINE tronc ---
+        // --- TRONC ---
+        // Les contours sont desormais traces en post (edge detection depth).
         glEnable(GL_CULL_FACE);
         TEST_OPENGL_ERROR();
-        glCullFace(GL_FRONT);
-        TEST_OPENGL_ERROR();
-        outline_.use();
-        outline_.mat4vf("model_view_matrix", mv);
-        outline_.mat4vf("projection_matrix", ctx.proj);
-        glUniform1f(glGetUniformLocation(outline_.prog_id(), "outline_thickness"),
-                    0.03f);
-        glBindVertexArray(trunk_.vao_id());
-        glDrawArrays(GL_TRIANGLES, 0, trunk_v_.size() / 3);
-
-        // --- TRONC ---
         glCullFace(GL_BACK);
         TEST_OPENGL_ERROR();
 
@@ -171,8 +161,12 @@ void PostPass::execute(const RenderContext& ctx)
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, ctx.scene_color_tex);
     TEST_OPENGL_ERROR();
-    GLint loc = glGetUniformLocation(prog_.prog_id(), "scene_tex");
-    glUniform1i(loc, 0);
+    glUniform1i(glGetUniformLocation(prog_.prog_id(), "scene_tex"), 0);
+
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_2D, ctx.scene_depth_tex);
+    TEST_OPENGL_ERROR();
+    glUniform1i(glGetUniformLocation(prog_.prog_id(), "depth_tex"), 1);
 
     glBindVertexArray(vao_);
     TEST_OPENGL_ERROR();

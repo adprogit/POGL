@@ -12,10 +12,10 @@ public:
 
     GLuint fbo() const { return fbo_; }
     GLuint color_tex() const { return color_tex_; }
-    GLuint depth_rbo() const { return depth_rbo_; }
+    GLuint depth_tex() const { return depth_tex_; }
 
 private:
     GLuint fbo_ = 0;
     GLuint color_tex_ = 0;
-    GLuint depth_rbo_ = 0;
+    GLuint depth_tex_ = 0;
 };
