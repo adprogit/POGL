@@ -27,8 +27,9 @@ std::vector<GLfloat> g_verts, g_normals, g_uv;
 Renderer g_renderer;
 program post_program;
 
-mygl::vector3 g_sun_dir(0.3f, 0.7f, 0.4f);
-mygl::vector3 g_sun_color(1.0f, 0.95f, 0.85f);
+// Ambiance crepusculaire : soleil bas sur l'horizon, lumiere chaude/orangee.
+mygl::vector3 g_sun_dir(0.55f, 0.12f, 0.82f);
+mygl::vector3 g_sun_color(1.0f, 0.55f, 0.28f);
 
 program trunk_program;
 program leaves_program;
