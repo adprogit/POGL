@@ -2,8 +2,14 @@ cmake_minimum_required(VERSION 3.21.2)
 project(OPENGL)
 set(CMAKE_CXX_STANDARD 20)
 
-add_library(mygl SHARED matrix4.cc helpers.cc init.cc shaders.cc obj_loader.cc geometry.cc camera.cc framebuffer.cc render_pass.cc renderer.cc img/image.cpp img/image_io.cpp)
-target_include_directories(mygl PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+add_library(mygl SHARED
+    src/core/matrix4.cc src/core/geometry.cc src/core/camera.cc
+    src/render/framebuffer.cc src/render/render_pass.cc src/render/renderer.cc src/render/shaders.cc
+    src/io/helpers.cc src/io/init.cc src/io/obj_loader.cc src/io/img/image.cc src/io/img/image_io.cc)
+target_include_directories(mygl PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/core
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/render
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/io)
 target_compile_options(mygl PRIVATE -Wall -Wextra -Werror -pedantic)
 
 if(APPLE)
@@ -17,7 +23,7 @@ else()
     target_link_libraries(mygl PUBLIC GL glut GLEW)
 endif()
 
-add_executable(main main.cpp)
+add_executable(main src/main.cc)
 target_link_libraries(main PRIVATE mygl)
 
 # Track the actual asset/shader files so the copy re-runs whenever any change.
