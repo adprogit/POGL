@@ -39,6 +39,16 @@ program grass_program;
 std::vector<GLfloat> grass_v, grass_n, grass_uv;
 std::vector<TreeInstance> grass;
 
+// Decorations cel-shade instanciees (buissons, fougeres, rochers, champignons).
+// Chacune reutilise GrassPass : meme pipeline mesh .obj + toon ramp coloree.
+struct Decor
+{
+    program prog;
+    std::vector<GLfloat> v, n, uv;
+    std::vector<TreeInstance> items;
+};
+Decor bush, fern, rock, mush;
+
 GLuint sky_vao;
 const int win_w = 1024, win_h = 1024;
 
@@ -153,7 +163,39 @@ int main(int argc, char* argv[])
     tifo::rgb24_image* grass_ramp =
         tifo::generate_toon_ramp_from_color(80, 140, 30, 4);
     grass_program.init_single_texture(grass_ramp, grass_ramp);
+    grass_program.set_albedo(mygl::vector3(80.0f / 255.0f, 140.0f / 255.0f,
+                                           30.0f / 255.0f));
     grass = make_scatter(400, 90.0f, 0.6f, 1.1f, 7);
+
+    // --- Decorations : meme logique que l'herbe, couleurs toon dediees -------
+    auto setup_decor = [&](Decor& d, const char* obj, int count, float spread,
+                           float smin, float smax, unsigned seed,
+                           unsigned char r, unsigned char g, unsigned char b) {
+        d.prog = init_shaders(asset("shaders/vertex.shd"),
+                              asset("shaders/leaves_fragment.shd"));
+        if (!load_obj(asset(obj).c_str(), d.v, d.n, d.uv))
+        {
+            std::cerr << "Could not load " << obj << std::endl;
+            return false;
+        }
+        d.prog.init_object(d.v, d.n, d.uv);
+        tifo::rgb24_image* ramp =
+            tifo::generate_toon_ramp_from_color(r, g, b, 4);
+        d.prog.init_single_texture(ramp, ramp);
+        d.prog.set_albedo(mygl::vector3(r / 255.0f, g / 255.0f, b / 255.0f));
+        d.items = make_scatter(count, spread, smin, smax, seed);
+        return true;
+    };
+
+    if (!setup_decor(bush, "Bush_Common.obj", 22, 80.0f, 0.9f, 1.6f, 11, 46,
+                     102, 28)
+        || !setup_decor(fern, "Fern_1.obj", 45, 85.0f, 0.6f, 1.1f, 23, 70, 132,
+                        48)
+        || !setup_decor(rock, "Rock_Medium_1.obj", 16, 80.0f, 0.7f, 1.4f, 31,
+                        112, 110, 120)
+        || !setup_decor(mush, "Mushroom_Common.obj", 18, 70.0f, 0.5f, 0.9f, 47,
+                        168, 78, 58))
+        return 1;
 
     geometry::ground(g_verts, g_normals, g_uv, 200.0f);
     ground_program.init_object(g_verts, g_normals, g_uv);
@@ -163,12 +205,20 @@ int main(int argc, char* argv[])
     static SkyPass sky_pass(sky_program, sky_vao);
     static GroundPass ground_pass(ground_program, g_verts);
     static GrassPass grass_pass(grass_program, grass, grass_v);
+    static GrassPass bush_pass(bush.prog, bush.items, bush.v);
+    static GrassPass fern_pass(fern.prog, fern.items, fern.v);
+    static GrassPass rock_pass(rock.prog, rock.items, rock.v);
+    static GrassPass mush_pass(mush.prog, mush.items, mush.v);
     static ForestPass forest_pass(trunk_program, leaves_program, trees, trunk_v,
                                   leaf_v);
     static PostPass post_pass(post_program, sky_vao);
     g_renderer.add_scene_pass(&sky_pass);
     g_renderer.add_scene_pass(&ground_pass);
     g_renderer.add_scene_pass(&grass_pass);
+    g_renderer.add_scene_pass(&bush_pass);
+    g_renderer.add_scene_pass(&fern_pass);
+    g_renderer.add_scene_pass(&rock_pass);
+    g_renderer.add_scene_pass(&mush_pass);
     g_renderer.add_scene_pass(&forest_pass);
     g_renderer.set_post_pass(&post_pass);
 

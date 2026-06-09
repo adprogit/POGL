@@ -104,6 +104,7 @@ void ForestPass::execute(const RenderContext& ctx)
         leaves_.mat4vf("projection_matrix", ctx.proj);
         leaves_.init_3f("sun_dir", ctx.sun_dir);
         leaves_.init_3f("sun_color", ctx.sun_color);
+        leaves_.init_3f("albedo", leaves_.albedo());
         glBindVertexArray(leaves_.vao_id());
         TEST_OPENGL_ERROR();
 
@@ -141,6 +142,7 @@ void GrassPass::execute(const RenderContext& ctx)
         prog_.mat4vf("projection_matrix", ctx.proj);
         prog_.init_3f("sun_dir", ctx.sun_dir);
         prog_.init_3f("sun_color", ctx.sun_color);
+        prog_.init_3f("albedo", prog_.albedo());
 
         glDrawArrays(GL_TRIANGLES, 0, mesh_v_.size() / 3);
         TEST_OPENGL_ERROR();

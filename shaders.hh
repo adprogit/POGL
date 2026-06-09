@@ -43,6 +43,12 @@ public:
     GLuint texture_id() const { return texture_id_; }
     GLuint lighting_id() const { return lighting_id_; }
 
+    // Couleur de base de l'objet (cel-shade). La toon ramp restant en
+    // lightness-only, c'est cet albedo qui distingue les objets non textures
+    // (feuilles, herbe, decors). Defaut : vert feuille.
+    void set_albedo(const mygl::vector3 &a) { albedo_ = a; }
+    const mygl::vector3 &albedo() const { return albedo_; }
+
 private:
   GLuint prog_id_;
   std::string info_log_program_;
@@ -50,6 +56,7 @@ private:
   GLuint vao_id_;
     GLuint texture_id_ = 0;
     GLuint lighting_id_ = 0;
+    mygl::vector3 albedo_ = mygl::vector3(51.0f / 255.0f, 88.0f / 255.0f, 0.0f);
 };
 
 program init_shaders(const std::string &vertex_shader_path,
