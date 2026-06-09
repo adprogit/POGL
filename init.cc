@@ -18,6 +18,9 @@ bool init_glut(int& argc, char* argv[])
     glutCreateWindow(" Test OpenGL − POGL");
     // Rendu plein ecran : la taille reelle est propagee via glutReshapeFunc.
     glutFullScreen();
+    // Masque le curseur (reaffirme chaque frame dans display() : macOS le
+    // reaffiche apres glutWarpPointer / changements de focus).
+    glutSetCursor(GLUT_CURSOR_NONE);
     return true;
 }
 

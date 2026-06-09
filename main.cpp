@@ -77,6 +77,9 @@ void reshape(int w, int h)
 
 void display()
 {
+    // Reaffirme le masquage du curseur : macOS le restaure apres warp/focus.
+    glutSetCursor(GLUT_CURSOR_NONE);
+
     RenderContext ctx;
     ctx.view = g_camera.view();
     ctx.proj = g_camera.proj();
