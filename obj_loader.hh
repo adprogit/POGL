@@ -3,5 +3,5 @@
 #include <string>
 #include <vector>
 
-bool load_obj(const std::string &path, std::vector<GLfloat> &vertices,
-              std::vector<GLfloat> &normals, std::vector<GLfloat> &uvs);
+bool load_obj(const std::string& path, std::vector<GLfloat>& vertices,
+              std::vector<GLfloat>& normals, std::vector<GLfloat>& uvs);

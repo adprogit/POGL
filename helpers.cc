@@ -1,7 +1,6 @@
 
 #include "helpers.hh"
 
-
 namespace tifo
 {
     typedef struct
@@ -70,11 +69,29 @@ namespace tifo
 
     float max3(float a, float b, float c)
     {
-        return a > b ? (a > c ? a : c) : (b > c ? b : c);
+        float m = a;
+        if (b > m)
+        {
+            m = b;
+        }
+        if (c > m)
+        {
+            m = c;
+        }
+        return m;
     }
     float min3(float a, float b, float c)
     {
-        return a < b ? (a < c ? a : c) : (b < c ? b : c);
+        float m = a;
+        if (b < m)
+        {
+            m = b;
+        }
+        if (c < m)
+        {
+            m = c;
+        }
+        return m;
     }
     std::vector<uint8_t> convertisseur_rgb_hsv(std::vector<uint8_t> rgb)
     {
@@ -148,7 +165,9 @@ namespace tifo
         float S = S_byte / 255.0f;
         float V = V_byte / 255.0f;
         float H = H_byte * 360.0f / 255.0f;
-        float R = 0, G = 0, B = 0;
+        float R = 0;
+        float G = 0;
+        float B = 0;
         float max_n = V;
         float min_n = max_n - S * max_n;
         if (H >= 0 && H <= 60)
@@ -242,15 +261,13 @@ namespace tifo
         return img;
     }
 
-    // Builds a lightness-only toon ramp: a 256x1 grayscale texture where the
-    // stepped lighting factor (in [0, 1]) is written equally to R, G and B.
-    // The shader supplies the colour via the albedo and multiplies by this
-    // factor, so the ramp must stay neutral (no hue/saturation baked in).
     static rgb24_image* build_lightness_ramp(int levels, float min_shade)
     {
         rgb24_image* ramp = new rgb24_image(256, 1);
         if (levels < 2)
+        {
             levels = 2;
+        }
 
         float inv_levels_minus_1 = 1.0f / (float)(levels - 1);
 
@@ -260,7 +277,9 @@ namespace tifo
 
             float quantized_t = std::floor(t * levels) * inv_levels_minus_1;
             if (quantized_t > 1.0f)
+            {
                 quantized_t = 1.0f;
+            }
 
             float factor = min_shade + (1.0f - min_shade) * quantized_t;
             uint8_t l = (uint8_t)std::min(255.0f, factor * 255.0f);
@@ -276,8 +295,6 @@ namespace tifo
     rgb24_image* generate_toon_ramp_from_color(uint8_t r, uint8_t g, uint8_t b,
                                                int levels)
     {
-        // Lightness-only ramp: the colour is provided by the albedo in the
-        // shader, so the input RGB is no longer baked into the ramp.
         (void)r;
         (void)g;
         (void)b;
@@ -286,11 +303,8 @@ namespace tifo
 
     rgb24_image* generate_toon_ramp(rgb24_image* texture, int levels)
     {
-        // Lightness-only ramp: the colour comes from the texture sampled in the
-        // shader, so the texture is not inspected here anymore.
         (void)texture;
         return build_lightness_ramp(levels, 0.2f);
     }
-
 
 } // namespace tifo

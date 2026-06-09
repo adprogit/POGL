@@ -1,4 +1,4 @@
-    #include "obj_loader.hh"
+#include "obj_loader.hh"
 
 #include <fstream>
 #include <iostream>
@@ -14,7 +14,7 @@ bool load_obj(const std::string& path, std::vector<GLfloat>& out_verts,
         return false;
     }
 
-    std::vector<float> positions; // x,y,z packés
+    std::vector<float> positions;
     std::vector<float> normals;
     std::vector<float> uvs;
 
@@ -31,7 +31,9 @@ bool load_obj(const std::string& path, std::vector<GLfloat>& out_verts,
 
         if (prefix == "v")
         {
-            float x, y, z;
+            float x;
+            float y;
+            float z;
             s >> x >> y >> z;
             positions.push_back(x);
             positions.push_back(y);
@@ -39,7 +41,9 @@ bool load_obj(const std::string& path, std::vector<GLfloat>& out_verts,
         }
         else if (prefix == "vn")
         {
-            float x, y, z;
+            float x;
+            float y;
+            float z;
             s >> x >> y >> z;
             normals.push_back(x);
             normals.push_back(y);
@@ -47,7 +51,8 @@ bool load_obj(const std::string& path, std::vector<GLfloat>& out_verts,
         }
         else if (prefix == "vt")
         {
-            float u, v;
+            float u;
+            float v;
             s >> u >> v;
             uvs.push_back(u);
             uvs.push_back(v);
@@ -57,13 +62,16 @@ bool load_obj(const std::string& path, std::vector<GLfloat>& out_verts,
             std::vector<std::string> tokens;
             std::string token;
             while (s >> token)
+            {
                 tokens.push_back(token);
+            }
 
             auto push_vertex = [&](const std::string& tok) {
-                int pi = 0, ti = 0, ni = 0;
+                int pi = 0;
+                int ti = 0;
+                int ni = 0;
                 if (sscanf(tok.c_str(), "%d/%d/%d", &pi, &ti, &ni) == 3)
                 {
-                    // pos/uv/normal
                 }
                 else if (sscanf(tok.c_str(), "%d//%d", &pi, &ni) == 2)
                 {
@@ -112,8 +120,6 @@ bool load_obj(const std::string& path, std::vector<GLfloat>& out_verts,
                 }
             };
 
-            // triangulation en éventail : 3 sommets = 1 triangle, 4 = 2
-            // triangles, etc.
             for (size_t i = 1; i + 1 < tokens.size(); i++)
             {
                 push_vertex(tokens[0]);
@@ -121,7 +127,6 @@ bool load_obj(const std::string& path, std::vector<GLfloat>& out_verts,
                 push_vertex(tokens[i + 1]);
             }
         }
-        // ignore tout le reste (mtllib, usemtl, g, o, s, #...)
     }
     return true;
 }

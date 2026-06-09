@@ -6,7 +6,6 @@
 #include "scene.hh"
 #include "shaders.hh"
 
-// Donnees partagees par toutes les passes pour une frame.
 struct RenderContext
 {
     mygl::matrix4 view;
@@ -14,11 +13,10 @@ struct RenderContext
     mygl::vector3 sun_dir{ 0, 0, 0 };
     mygl::vector3 sun_color{ 0, 0, 0 };
     mygl::vector3 cam_pos{ 0, 0, 0 };
-    GLuint scene_color_tex = 0; // rempli par le Renderer avant la passe post
-    GLuint scene_depth_tex = 0; // idem : depth pour la detection de contours
+    GLuint scene_color_tex = 0;
+    GLuint scene_depth_tex = 0;
 };
 
-// Une etape de rendu. Chaque passe gere son propre etat GL et son draw.
 class RenderPass
 {
 public:
@@ -26,9 +24,6 @@ public:
     virtual void execute(const RenderContext& ctx) = 0;
 };
 
-// --- Passes concretes --------------------------------------------------------
-
-// Ciel : triangle plein ecran, depth/cull off, reconstruit les rayons.
 class SkyPass : public RenderPass
 {
 public:
@@ -43,7 +38,6 @@ private:
     GLuint vao_;
 };
 
-// Sol : quad cel-shade.
 class GroundPass : public RenderPass
 {
 public:
@@ -58,8 +52,6 @@ private:
     const std::vector<GLfloat>& verts_;
 };
 
-// Foret : par instance, tronc + feuilles cel-shade. Les contours sont traces
-// en post-processing (edge detection sur le depth), plus en inverted hull.
 class ForestPass : public RenderPass
 {
 public:
@@ -83,7 +75,6 @@ private:
     const std::vector<GLfloat>& leaf_v_;
 };
 
-// Herbe : maillage .obj instancie, cel-shade, double-face (cull off).
 class GrassPass : public RenderPass
 {
 public:
@@ -101,7 +92,6 @@ private:
     const std::vector<GLfloat>& mesh_v_;
 };
 
-// Post-processing : echantillonne la couleur de scene vers le framebuffer 0.
 class PostPass : public RenderPass
 {
 public:

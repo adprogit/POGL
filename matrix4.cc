@@ -39,7 +39,6 @@ namespace mygl
         content_ = arr;
     }
 
-    // Stockage column-major : content_[col * 4 + row]
     GLfloat matrix4::operator()(size_t row, size_t col) const
     {
         return content_[col * 4 + row];
@@ -252,10 +251,15 @@ namespace mygl
         }
         return result;
     }
-    matrix4 rotate_y(float a) {
+    matrix4 rotate_y(float a)
+    {
         matrix4 m = matrix4::identity();
-        float c = std::cos(a), s = std::sin(a);
-        m(0,0)=c; m(0,2)=s; m(2,0)=-s; m(2,2)=c;
+        float c = std::cos(a);
+        float s = std::sin(a);
+        m(0, 0) = c;
+        m(0, 2) = s;
+        m(2, 0) = -s;
+        m(2, 2) = c;
         return m;
     }
 
@@ -263,9 +267,9 @@ namespace mygl
 
 std::ostream& operator<<(std::ostream& out, const mygl::matrix4& m)
 {
-    for (size_t i = 0; i < 4; ++i) // row
+    for (size_t i = 0; i < 4; ++i)
     {
-        for (size_t j = 0; j < 4; ++j) // col
+        for (size_t j = 0; j < 4; ++j)
         {
             out << m(i, j) << " ";
         }

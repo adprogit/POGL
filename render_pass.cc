@@ -49,12 +49,9 @@ void ForestPass::execute(const RenderContext& ctx)
     for (const auto& t : trees_)
     {
         mygl::matrix4 model = mygl::translate(t.x, -2.0f, t.z)
-                            * mygl::rotate_y(t.rot)
-                            * mygl::scale(t.scale, t.scale, t.scale);
+            * mygl::rotate_y(t.rot) * mygl::scale(t.scale, t.scale, t.scale);
         mygl::matrix4 mv = ctx.view * model;
 
-        // --- TRONC ---
-        // Les contours sont desormais traces en post (edge detection depth).
         glEnable(GL_CULL_FACE);
         TEST_OPENGL_ERROR();
         glCullFace(GL_BACK);
@@ -87,7 +84,6 @@ void ForestPass::execute(const RenderContext& ctx)
 
         glDrawArrays(GL_TRIANGLES, 0, trunk_v_.size() / 3);
 
-        // --- FEUILLES ---
         TEST_OPENGL_ERROR();
         glDisable(GL_CULL_FACE);
         leaves_.use();
@@ -115,7 +111,6 @@ void ForestPass::execute(const RenderContext& ctx)
 
 void GrassPass::execute(const RenderContext& ctx)
 {
-    // Herbe fine : pas de back-face culling.
     glDisable(GL_CULL_FACE);
     TEST_OPENGL_ERROR();
 
@@ -133,8 +128,7 @@ void GrassPass::execute(const RenderContext& ctx)
     for (const auto& b : blades_)
     {
         mygl::matrix4 model = mygl::translate(b.x, -2.0f, b.z)
-                            * mygl::rotate_y(b.rot)
-                            * mygl::scale(b.scale, b.scale, b.scale);
+            * mygl::rotate_y(b.rot) * mygl::scale(b.scale, b.scale, b.scale);
         mygl::matrix4 mv = ctx.view * model;
 
         prog_.mat4vf("model_view_matrix", mv);

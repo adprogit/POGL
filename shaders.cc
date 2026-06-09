@@ -8,7 +8,9 @@
     {                                                                          \
         GLenum err = glGetError();                                             \
         if (err != GL_NO_ERROR)                                                \
+        {                                                                      \
             std::cerr << "OpenGL ERROR!" << __LINE__ << std::endl;             \
+        }                                                                      \
     } while (0)
 
 program::program()
@@ -158,7 +160,9 @@ bool program::is_ready()
 void program::use()
 {
     if (this->is_ready())
+    {
         glUseProgram(this->prog_id_);
+    }
 }
 
 std::string readFile(const std::string& path)
@@ -166,7 +170,9 @@ std::string readFile(const std::string& path)
     std::ifstream file(path);
 
     if (!file)
+    {
         throw std::runtime_error("Impossible d'ouvrir le fichier : " + path);
+    }
 
     std::ostringstream buffer;
     buffer << file.rdbuf();
@@ -273,7 +279,8 @@ void program::init_texture(tifo::rgb24_image* texture,
 
     GLint tex_location;
     GLint light_location;
-    GLint texture_units, combined_texture_units;
+    GLint texture_units;
+    GLint combined_texture_units;
     glGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS, &texture_units);
     TEST_OPENGL_ERROR();
     glGetIntegerv(GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS, &combined_texture_units);
@@ -298,7 +305,6 @@ void program::init_texture(tifo::rgb24_image* texture,
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     TEST_OPENGL_ERROR();
 
-    // lighting
     glGenTextures(1, &lighting_id);
     TEST_OPENGL_ERROR();
     glActiveTexture(GL_TEXTURE1);

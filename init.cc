@@ -4,8 +4,6 @@ bool init_glut(int& argc, char* argv[])
 {
     glutInit(&argc, argv);
 #ifdef __APPLE__
-    // Apple's legacy GLUT lacks glutInitContextVersion/Profile; request a
-    // core profile (up to GL 4.1 on macOS) via the display-mode flag instead.
     glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE | GLUT_DEPTH
                         | GLUT_3_2_CORE_PROFILE);
 #else
@@ -16,10 +14,7 @@ bool init_glut(int& argc, char* argv[])
     glutInitWindowSize(1024, 1024);
     glutInitWindowPosition(10, 10);
     glutCreateWindow(" Test OpenGL − POGL");
-    // Rendu plein ecran : la taille reelle est propagee via glutReshapeFunc.
     glutFullScreen();
-    // Masque le curseur (reaffirme chaque frame dans display() : macOS le
-    // reaffiche apres glutWarpPointer / changements de focus).
     glutSetCursor(GLUT_CURSOR_NONE);
     return true;
 }

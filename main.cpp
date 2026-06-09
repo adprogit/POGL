@@ -16,49 +16,67 @@
 #include "scene.hh"
 #include "shaders.hh"
 
-// --- Etat global de la scene -------------------------------------------------
 std::vector<TreeInstance> trees;
 
 program g_program;
 program sky_program;
 program ground_program;
-std::vector<GLfloat> g_verts, g_normals, g_uv;
+std::vector<GLfloat> g_verts;
+std::vector<GLfloat> g_normals;
+std::vector<GLfloat> g_uv;
 
 Renderer g_renderer;
 program post_program;
 
-// Ambiance crepusculaire : soleil bas sur l'horizon, lumiere chaude/orangee.
 mygl::vector3 g_sun_dir(0.55f, 0.12f, 0.82f);
 mygl::vector3 g_sun_color(1.0f, 0.55f, 0.28f);
 
 program trunk_program;
 program leaves_program;
-std::vector<GLfloat> trunk_v, trunk_n, trunk_uv;
-std::vector<GLfloat> leaf_v, leaf_n, leaf_uv;
+std::vector<GLfloat> trunk_v;
+std::vector<GLfloat> trunk_n;
+std::vector<GLfloat> trunk_uv;
+std::vector<GLfloat> leaf_v;
+std::vector<GLfloat> leaf_n;
+std::vector<GLfloat> leaf_uv;
 
 program grass_program;
-std::vector<GLfloat> grass_v, grass_n, grass_uv;
+std::vector<GLfloat> grass_v;
+std::vector<GLfloat> grass_n;
+std::vector<GLfloat> grass_uv;
 std::vector<TreeInstance> grass;
 
-// Decorations cel-shade instanciees (buissons, fougeres, rochers, champignons).
-// Chacune reutilise GrassPass : meme pipeline mesh .obj + toon ramp coloree.
 struct Decor
 {
     program prog;
-    std::vector<GLfloat> v, n, uv;
+    std::vector<GLfloat> v;
+    std::vector<GLfloat> n;
+    std::vector<GLfloat> uv;
     std::vector<TreeInstance> items;
 };
-Decor bush, fern, rock, mush;
+Decor bush;
+Decor fern;
+Decor rock;
+Decor mush;
 
 GLuint sky_vao;
-const int win_w = 1024, win_h = 1024;
+const int win_w = 1024;
+const int win_h = 1024;
 
 Camera g_camera(win_w, win_h);
 
-// --- Callbacks GLUT (delegent a la camera) -----------------------------------
-void keyboard_down(unsigned char key, int, int) { g_camera.on_key_down(key); }
-void keyboard_up(unsigned char key, int, int) { g_camera.on_key_up(key); }
-void passive_motion(int x, int y) { g_camera.on_passive_motion(x, y); }
+void keyboard_down(unsigned char key, int, int)
+{
+    g_camera.on_key_down(key);
+}
+void keyboard_up(unsigned char key, int, int)
+{
+    g_camera.on_key_up(key);
+}
+void passive_motion(int x, int y)
+{
+    g_camera.on_passive_motion(x, y);
+}
 
 void idle()
 {
@@ -66,18 +84,18 @@ void idle()
     glutPostRedisplay();
 }
 
-// Adapte le rendu a la taille reelle de la fenetre (plein ecran / resize).
 void reshape(int w, int h)
 {
     if (h == 0)
+    {
         h = 1;
+    }
     g_camera.set_viewport(w, h);
     g_renderer.resize(w, h);
 }
 
 void display()
 {
-    // Reaffirme le masquage du curseur : macOS le restaure apres warp/focus.
     glutSetCursor(GLUT_CURSOR_NONE);
 
     RenderContext ctx;
@@ -92,11 +110,17 @@ void display()
 int main(int argc, char* argv[])
 {
     if (!init_glut(argc, argv))
+    {
         return 1;
+    }
     if (!init_glew())
+    {
         return 1;
+    }
     if (!init_gl())
+    {
         return 1;
+    }
     g_renderer.init(win_w, win_h);
     g_sun_dir.normalize();
     trees = make_forest(30, 80.0f);
@@ -161,12 +185,12 @@ int main(int argc, char* argv[])
 
     tifo::rgb24_image* bark = tifo::load_image(asset("bark.tga").c_str());
     tifo::rgb24_image* bark_ramp = tifo::generate_toon_ramp(bark, 4);
-    tifo::rgb24_image* leaf_ramp = tifo::generate_toon_ramp_from_color(51, 88, 0, 4);
+    tifo::rgb24_image* leaf_ramp =
+        tifo::generate_toon_ramp_from_color(51, 88, 0, 4);
 
     trunk_program.init_single_texture(bark, bark_ramp);
     leaves_program.init_single_texture(leaf_ramp, leaf_ramp);
 
-    // --- Herbe : meme logique que les feuilles (mesh .obj + toon ramp vert) ---
     if (!load_obj(asset("grass.obj").c_str(), grass_v, grass_n, grass_uv))
     {
         std::cerr << "Could not load grass.obj" << std::endl;
@@ -176,11 +200,10 @@ int main(int argc, char* argv[])
     tifo::rgb24_image* grass_ramp =
         tifo::generate_toon_ramp_from_color(80, 140, 30, 4);
     grass_program.init_single_texture(grass_ramp, grass_ramp);
-    grass_program.set_albedo(mygl::vector3(80.0f / 255.0f, 140.0f / 255.0f,
-                                           30.0f / 255.0f));
+    grass_program.set_albedo(
+        mygl::vector3(80.0f / 255.0f, 140.0f / 255.0f, 30.0f / 255.0f));
     grass = make_scatter(400, 90.0f, 0.6f, 1.1f, 7);
 
-    // --- Decorations : meme logique que l'herbe, couleurs toon dediees -------
     auto setup_decor = [&](Decor& d, const char* obj, int count, float spread,
                            float smin, float smax, unsigned seed,
                            unsigned char r, unsigned char g, unsigned char b) {
@@ -208,13 +231,14 @@ int main(int argc, char* argv[])
                         112, 110, 120)
         || !setup_decor(mush, "Mushroom_Common.obj", 18, 70.0f, 0.5f, 0.9f, 47,
                         168, 78, 58))
+    {
         return 1;
+    }
 
     geometry::ground(g_verts, g_normals, g_uv, 200.0f);
     ground_program.init_object(g_verts, g_normals, g_uv);
     TEST_OPENGL_ERROR();
 
-    // Assemblage de la pipeline : ordre des passes dans le FBO, puis post.
     static SkyPass sky_pass(sky_program, sky_vao);
     static GroundPass ground_pass(ground_program, g_verts);
     static GrassPass grass_pass(grass_program, grass, grass_v);

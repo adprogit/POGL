@@ -4,9 +4,9 @@
 #include <cstdlib>
 
 #ifdef __APPLE__
-#include <GLUT/glut.h>
+#    include <GLUT/glut.h>
 #else
-#include <GL/freeglut.h>
+#    include <GL/freeglut.h>
 #endif
 
 Camera::Camera(int win_w, int win_h)
@@ -20,33 +20,58 @@ void Camera::set_viewport(int w, int h)
 {
     win_w_ = w;
     win_h_ = h;
-    aspect_ = (h > 0) ? (float)w / (float)h : 1.0f;
+    if (h > 0)
+    {
+        aspect_ = (float)w / (float)h;
+    }
+    else
+    {
+        aspect_ = 1.0f;
+    }
 }
 
 void Camera::on_key_down(unsigned char key)
 {
     if (key == 'z' || key == 'Z' || key == 'w' || key == 'W')
+    {
         key_z_ = true;
+    }
     if (key == 's' || key == 'S')
+    {
         key_s_ = true;
+    }
     if (key == 'q' || key == 'Q' || key == 'a' || key == 'A')
+    {
         key_q_ = true;
+    }
     if (key == 'd' || key == 'D')
+    {
         key_d_ = true;
+    }
     if (key == 27)
+    {
         exit(0);
+    }
 }
 
 void Camera::on_key_up(unsigned char key)
 {
     if (key == 'z' || key == 'Z' || key == 'w' || key == 'W')
+    {
         key_z_ = false;
+    }
     if (key == 's' || key == 'S')
+    {
         key_s_ = false;
+    }
     if (key == 'q' || key == 'Q' || key == 'a' || key == 'A')
+    {
         key_q_ = false;
+    }
     if (key == 'd' || key == 'D')
+    {
         key_d_ = false;
+    }
 }
 
 void Camera::on_passive_motion(int x, int y)
@@ -78,22 +103,34 @@ void Camera::update()
     const int margin = 80;
     const float edge_speed = 1.5f;
     if (mouse_x_ < margin)
+    {
         horizontal_angle_ +=
             edge_speed * delta_time * (margin - mouse_x_) / float(margin);
+    }
     if (mouse_x_ > win_w_ - margin)
+    {
         horizontal_angle_ -= edge_speed * delta_time
             * (mouse_x_ - (win_w_ - margin)) / float(margin);
+    }
     if (mouse_y_ < margin)
+    {
         vertical_angle_ +=
             edge_speed * delta_time * (margin - mouse_y_) / float(margin);
+    }
     if (mouse_y_ > win_h_ - margin)
+    {
         vertical_angle_ -= edge_speed * delta_time
             * (mouse_y_ - (win_h_ - margin)) / float(margin);
+    }
 
     if (vertical_angle_ > 1.5f)
+    {
         vertical_angle_ = 1.5f;
+    }
     if (vertical_angle_ < -1.5f)
+    {
         vertical_angle_ = -1.5f;
+    }
 
     float fx = std::cos(vertical_angle_) * std::sin(horizontal_angle_);
     float fy = std::sin(vertical_angle_);
@@ -127,6 +164,5 @@ void Camera::update()
 
     view_ = mygl::look_at(pos_x_, pos_y_, pos_z_, pos_x_ + fx, pos_y_ + fy,
                           pos_z_ + fz, 0, 1, 0);
-    // Frustum elargi horizontalement selon l'aspect pour eviter l'etirement.
     proj_ = mygl::frustum(-aspect_, aspect_, -1, 1, 1.0f, 250.0f);
 }

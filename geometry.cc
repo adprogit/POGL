@@ -15,7 +15,9 @@ namespace geometry
         float verts[18] = { -h, 0, -h, h, 0, -h, h,  0, h,
                             -h, 0, -h, h, 0, h,  -h, 0, h };
         for (int i = 0; i < 18; i++)
+        {
             vertices.push_back(verts[i]);
+        }
         for (int i = 0; i < 6; i++)
         {
             normals.push_back(0);
@@ -50,8 +52,10 @@ namespace geometry
             GLfloat c1 = std::cos(theta1);
             GLfloat s1 = std::sin(theta1);
 
-            GLfloat x0 = radius * c0, z0 = radius * s0;
-            GLfloat x1 = radius * c1, z1 = radius * s1;
+            GLfloat x0 = radius * c0;
+            GLfloat z0 = radius * s0;
+            GLfloat x1 = radius * c1;
+            GLfloat z1 = radius * s1;
 
             vertices.push_back(x0);
             vertices.push_back(-halfH);
