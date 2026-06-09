@@ -9,6 +9,13 @@ void Renderer::init(int width, int height)
     fbo_.init(width, height);
 }
 
+void Renderer::resize(int width, int height)
+{
+    width_ = width;
+    height_ = height;
+    fbo_.resize(width, height);
+}
+
 void Renderer::render(RenderContext ctx)
 {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);

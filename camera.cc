@@ -16,6 +16,13 @@ Camera::Camera(int win_w, int win_h)
     , mouse_y_(win_h / 2)
 {}
 
+void Camera::set_viewport(int w, int h)
+{
+    win_w_ = w;
+    win_h_ = h;
+    aspect_ = (h > 0) ? (float)w / (float)h : 1.0f;
+}
+
 void Camera::on_key_down(unsigned char key)
 {
     if (key == 'z' || key == 'Z' || key == 'w' || key == 'W')
@@ -120,5 +127,6 @@ void Camera::update()
 
     view_ = mygl::look_at(pos_x_, pos_y_, pos_z_, pos_x_ + fx, pos_y_ + fy,
                           pos_z_ + fz, 0, 1, 0);
-    proj_ = mygl::frustum(-1, 1, -1, 1, 1.0f, 250.0f);
+    // Frustum elargi horizontalement selon l'aspect pour eviter l'etirement.
+    proj_ = mygl::frustum(-aspect_, aspect_, -1, 1, 1.0f, 250.0f);
 }

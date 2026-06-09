@@ -53,3 +53,15 @@ void SceneFbo::init(int width, int height)
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
+
+void SceneFbo::resize(int width, int height)
+{
+    if (fbo_)
+    {
+        glDeleteTextures(1, &color_tex_);
+        glDeleteTextures(1, &depth_tex_);
+        glDeleteFramebuffers(1, &fbo_);
+        fbo_ = color_tex_ = depth_tex_ = 0;
+    }
+    init(width, height);
+}

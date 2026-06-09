@@ -66,6 +66,15 @@ void idle()
     glutPostRedisplay();
 }
 
+// Adapte le rendu a la taille reelle de la fenetre (plein ecran / resize).
+void reshape(int w, int h)
+{
+    if (h == 0)
+        h = 1;
+    g_camera.set_viewport(w, h);
+    g_renderer.resize(w, h);
+}
+
 void display()
 {
     RenderContext ctx;
@@ -224,6 +233,8 @@ int main(int argc, char* argv[])
     g_renderer.set_post_pass(&post_pass);
 
     glutDisplayFunc(display);
+    TEST_OPENGL_ERROR();
+    glutReshapeFunc(reshape);
     TEST_OPENGL_ERROR();
     glutIdleFunc(idle);
     TEST_OPENGL_ERROR();

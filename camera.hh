@@ -17,6 +17,9 @@ public:
     // Recalcule view/proj a partir des entrees et du temps ecoule.
     void update();
 
+    // Met a jour la taille de la fenetre (marges de scroll + aspect projection).
+    void set_viewport(int w, int h);
+
     const mygl::matrix4& view() const { return view_; }
     const mygl::matrix4& proj() const { return proj_; }
     mygl::vector3 position() const { return mygl::vector3(pos_x_, pos_y_, pos_z_); }
@@ -28,6 +31,7 @@ private:
     float speed_ = 3.0f;
     float mouse_speed_ = 0.003f;
     int win_w_, win_h_;
+    float aspect_ = 1.0f;
 
     int last_mouse_x_ = -1, last_mouse_y_ = -1;
     int mouse_x_, mouse_y_;

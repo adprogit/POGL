@@ -13,6 +13,9 @@ class Renderer
 public:
     void init(int width, int height);
 
+    // Adapte le FBO et le viewport a une nouvelle taille (plein ecran/resize).
+    void resize(int width, int height);
+
     // Les passes ne sont pas possedees (elles vivent cote appelant).
     void add_scene_pass(RenderPass* pass) { scene_passes_.push_back(pass); }
     void set_post_pass(RenderPass* pass) { post_pass_ = pass; }

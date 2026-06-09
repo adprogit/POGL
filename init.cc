@@ -16,6 +16,8 @@ bool init_glut(int& argc, char* argv[])
     glutInitWindowSize(1024, 1024);
     glutInitWindowPosition(10, 10);
     glutCreateWindow(" Test OpenGL − POGL");
+    // Rendu plein ecran : la taille reelle est propagee via glutReshapeFunc.
+    glutFullScreen();
     return true;
 }
 
