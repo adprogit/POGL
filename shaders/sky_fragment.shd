@@ -11,19 +11,15 @@ void main() {
     vec4 world = inv_view_proj * vec4(ndc, 1.0, 1.0);
     vec3 ray_dir = normalize(world.xyz / world.w - cam_pos);
 
-    // Degrade vertical : bleu profond crepusculaire en haut -> orange chaud a l'horizon.
     float h = clamp(ray_dir.y * 0.5 + 0.5, 0.0, 1.0);
     vec3 zenith  = vec3(0.18, 0.20, 0.42);
     vec3 horizon = vec3(0.95, 0.45, 0.25);
     vec3 sky = mix(horizon, zenith, smoothstep(0.45, 0.85, h));
 
-    // Halo chaud autour du soleil couchant, doux et progressif.
     float sun_dot = max(dot(ray_dir, sun_dir), 0.0);
     sky += pow(sun_dot, 6.0)  * vec3(1.0, 0.55, 0.25) * 0.55;
     sky += pow(sun_dot, 40.0) * vec3(1.0, 0.7, 0.4)  * 0.8;
 
-    // Disque solaire : rond et bien defini, bord adouci. HDR modere
-    // pour alimenter les god-rays en post (valeur > 1.0).
     float disc = smoothstep(0.9965, 0.9990, sun_dot);
     sky = mix(sky, vec3(1.0, 0.78, 0.5), disc);
     sky += disc * vec3(1.0, 0.6, 0.35) * 1.4;

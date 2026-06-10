@@ -7,7 +7,7 @@ out vec4 output_color;
 in vec3 frag_normal_world;
 void main() {
         vec3 N = normalize(frag_normal_world);
-       float wrap = 0.5;  // wrap diffuse pour éviter zones noires
+       float wrap = 0.5;
        float NdotL = (dot(N, sun_dir) + wrap) / (1.0 + wrap);
        NdotL = max(NdotL, 0.0);
 

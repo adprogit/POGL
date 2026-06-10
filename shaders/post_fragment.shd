@@ -107,13 +107,10 @@ void main() {
 
     vec3 c = scene + rays * sun_color;
 
-    // --- Grading crepusculaire ------------------------------------------
-    // Pousse les tons chauds, refroidit (bleute) les ombres.
     c *= vec3(1.12, 0.95, 0.82);
     c = mix(c, c * vec3(0.7, 0.78, 1.05),
             smoothstep(0.5, 0.0, dot(c, vec3(0.333))));
 
-    // Vignette chaude pour resserrer l'ambiance.
     vec2 vd = uv - 0.5;
     float vig = smoothstep(0.85, 0.25, dot(vd, vd) * 2.0);
     c *= mix(vec3(0.55, 0.35, 0.30), vec3(1.0), vig);
