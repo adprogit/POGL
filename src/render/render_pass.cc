@@ -15,6 +15,7 @@ void SkyPass::execute(const RenderContext& ctx)
     prog_.mat4vf("inv_view_proj", inv_vp);
     prog_.init_3f("sun_dir", ctx.sun_dir);
     prog_.init_3f("cam_pos", ctx.cam_pos);
+    prog_.init_1f("time", ctx.time);
     glBindVertexArray(vao_);
     TEST_OPENGL_ERROR();
     glDrawArrays(GL_TRIANGLES, 0, 3);

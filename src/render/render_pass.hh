@@ -13,6 +13,7 @@ struct RenderContext
     mygl::vector3 sun_dir{ 0, 0, 0 };
     mygl::vector3 sun_color{ 0, 0, 0 };
     mygl::vector3 cam_pos{ 0, 0, 0 };
+    float time = 0.0f;
     GLuint scene_color_tex = 0;
     GLuint scene_depth_tex = 0;
 };

@@ -104,6 +104,7 @@ void display()
     ctx.sun_dir = g_sun_dir;
     ctx.sun_color = g_sun_color;
     ctx.cam_pos = g_camera.position();
+    ctx.time = glutGet(GLUT_ELAPSED_TIME) / 1000.0f;
     g_renderer.render(ctx);
 }
 

@@ -374,6 +374,14 @@ void program::init_3f(const std::string& loc, const mygl::vector3& to_init)
         glUniform3f(to_be_init, to_init.a_, to_init.b_, to_init.c_);
     }
 }
+void program::init_1f(const std::string& loc, GLfloat to_init)
+{
+    GLint to_be_init = glGetUniformLocation(prog_id_, loc.c_str());
+    if (to_be_init != -1)
+    {
+        glUniform1f(to_be_init, to_init);
+    }
+}
 void program::mat4vf(const std::string& loc, const mygl::matrix4& m)
 {
     GLint to_be_init = glGetUniformLocation(prog_id_, loc.c_str());

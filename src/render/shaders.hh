@@ -43,6 +43,7 @@ public:
                   GLfloat left, GLfloat right, GLfloat bottom, GLfloat top,
                   GLfloat nearVal, GLfloat farVal);
     void init_3f(const std::string& loc, const mygl::vector3& v);
+    void init_1f(const std::string& loc, GLfloat v);
     void mat4vf(const std::string& loc, const mygl::matrix4& m);
 
     void init_texture(tifo::rgb24_image* texture, tifo::rgb24_image* lighting);
