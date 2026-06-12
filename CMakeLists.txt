@@ -23,8 +23,33 @@ else()
     target_link_libraries(mygl PUBLIC GL glut GLEW)
 endif()
 
-add_executable(main src/main.cc)
-target_link_libraries(main PRIVATE mygl)
+# Dear ImGui (GLUT + OpenGL3 backends) for the real-time parameters GUI.
+include(FetchContent)
+FetchContent_Declare(imgui
+    URL https://github.com/ocornut/imgui/archive/refs/tags/v1.92.8.tar.gz
+    DOWNLOAD_EXTRACT_TIMESTAMP TRUE)
+FetchContent_MakeAvailable(imgui)
+
+add_library(imgui STATIC
+    ${imgui_SOURCE_DIR}/imgui.cpp
+    ${imgui_SOURCE_DIR}/imgui_draw.cpp
+    ${imgui_SOURCE_DIR}/imgui_tables.cpp
+    ${imgui_SOURCE_DIR}/imgui_widgets.cpp
+    ${imgui_SOURCE_DIR}/backends/imgui_impl_glut.cpp
+    ${imgui_SOURCE_DIR}/backends/imgui_impl_opengl3.cpp)
+target_include_directories(imgui PUBLIC
+    ${imgui_SOURCE_DIR}
+    ${imgui_SOURCE_DIR}/backends)
+if(APPLE)
+    target_compile_options(imgui PUBLIC -Wno-deprecated-declarations)
+    target_link_libraries(imgui PUBLIC ${OPENGL_FRAMEWORK} ${GLUT_FRAMEWORK})
+else()
+    target_link_libraries(imgui PUBLIC GL glut)
+endif()
+
+add_executable(main src/main.cc src/ui/gui.cc)
+target_include_directories(main PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src/ui)
+target_link_libraries(main PRIVATE mygl imgui)
 
 # Track the actual asset/shader files so the copy re-runs whenever any change.
 file(GLOB_RECURSE ASSET_FILES CONFIGURE_DEPENDS ${CMAKE_SOURCE_DIR}/assets/*)

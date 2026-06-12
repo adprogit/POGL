@@ -80,6 +80,18 @@ void Camera::on_passive_motion(int x, int y)
     mouse_y_ = y;
 }
 
+void Camera::set_look_enabled(bool enabled)
+{
+    look_enabled_ = enabled;
+    if (enabled)
+    {
+        // Forget the last mouse position so the view does not jump on the
+        // first frame after the GUI is closed.
+        last_mouse_x_ = -1;
+        last_mouse_y_ = -1;
+    }
+}
+
 void Camera::update()
 {
     static int last_time = glutGet(GLUT_ELAPSED_TIME);
@@ -87,40 +99,43 @@ void Camera::update()
     float delta_time = (now - last_time) / 1000.0f;
     last_time = now;
 
-    if (last_mouse_x_ >= 0)
+    if (look_enabled_)
     {
-        int dx = mouse_x_ - last_mouse_x_;
-        int dy = mouse_y_ - last_mouse_y_;
-        if (std::abs(dx) < 200 && std::abs(dy) < 200)
+        if (last_mouse_x_ >= 0)
         {
-            horizontal_angle_ -= dx * mouse_speed_;
-            vertical_angle_ -= dy * mouse_speed_;
+            int dx = mouse_x_ - last_mouse_x_;
+            int dy = mouse_y_ - last_mouse_y_;
+            if (std::abs(dx) < 200 && std::abs(dy) < 200)
+            {
+                horizontal_angle_ -= dx * mouse_speed_;
+                vertical_angle_ -= dy * mouse_speed_;
+            }
         }
-    }
-    last_mouse_x_ = mouse_x_;
-    last_mouse_y_ = mouse_y_;
+        last_mouse_x_ = mouse_x_;
+        last_mouse_y_ = mouse_y_;
 
-    const int margin = 80;
-    const float edge_speed = 1.5f;
-    if (mouse_x_ < margin)
-    {
-        horizontal_angle_ +=
-            edge_speed * delta_time * (margin - mouse_x_) / float(margin);
-    }
-    if (mouse_x_ > win_w_ - margin)
-    {
-        horizontal_angle_ -= edge_speed * delta_time
-            * (mouse_x_ - (win_w_ - margin)) / float(margin);
-    }
-    if (mouse_y_ < margin)
-    {
-        vertical_angle_ +=
-            edge_speed * delta_time * (margin - mouse_y_) / float(margin);
-    }
-    if (mouse_y_ > win_h_ - margin)
-    {
-        vertical_angle_ -= edge_speed * delta_time
-            * (mouse_y_ - (win_h_ - margin)) / float(margin);
+        const int margin = 80;
+        const float edge_speed = 1.5f;
+        if (mouse_x_ < margin)
+        {
+            horizontal_angle_ +=
+                edge_speed * delta_time * (margin - mouse_x_) / float(margin);
+        }
+        if (mouse_x_ > win_w_ - margin)
+        {
+            horizontal_angle_ -= edge_speed * delta_time
+                * (mouse_x_ - (win_w_ - margin)) / float(margin);
+        }
+        if (mouse_y_ < margin)
+        {
+            vertical_angle_ +=
+                edge_speed * delta_time * (margin - mouse_y_) / float(margin);
+        }
+        if (mouse_y_ > win_h_ - margin)
+        {
+            vertical_angle_ -= edge_speed * delta_time
+                * (mouse_y_ - (win_h_ - margin)) / float(margin);
+        }
     }
 
     if (vertical_angle_ > 1.5f)

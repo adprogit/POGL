@@ -6,11 +6,13 @@
 #include "framebuffer.hh"
 #include "geometry.hh"
 #include "gl_debug.hh"
+#include "gui.hh"
 #include "helpers.hh"
 #include "img/image.hh"
 #include "img/image_io.hh"
 #include "init.hh"
 #include "obj_loader.hh"
+#include "render_params.hh"
 #include "render_pass.hh"
 #include "renderer.hh"
 #include "scene.hh"
@@ -28,8 +30,8 @@ std::vector<GLfloat> g_uv;
 Renderer g_renderer;
 program post_program;
 
-mygl::vector3 g_sun_dir(0.55f, 0.12f, 0.82f);
-mygl::vector3 g_sun_color(1.0f, 0.55f, 0.28f);
+RenderParams g_params;
+bool g_gui_visible = false;
 
 program trunk_program;
 program leaves_program;
@@ -65,17 +67,80 @@ const int win_h = 1024;
 
 Camera g_camera(win_w, win_h);
 
-void keyboard_down(unsigned char key, int, int)
+void toggle_gui()
 {
+    g_gui_visible = !g_gui_visible;
+    g_camera.set_look_enabled(!g_gui_visible);
+}
+
+void keyboard_down(unsigned char key, int x, int y)
+{
+    if (key == '\t')
+    {
+        toggle_gui();
+        return;
+    }
+    if (g_gui_visible)
+    {
+        gui_on_keyboard(key, x, y);
+        if (gui_wants_keyboard())
+        {
+            return;
+        }
+    }
     g_camera.on_key_down(key);
 }
-void keyboard_up(unsigned char key, int, int)
+void keyboard_up(unsigned char key, int x, int y)
 {
+    if (g_gui_visible)
+    {
+        gui_on_keyboard_up(key, x, y);
+    }
+    // Always release camera keys so none get stuck when the GUI grabs focus.
     g_camera.on_key_up(key);
+}
+void special_down(int key, int x, int y)
+{
+    if (g_gui_visible)
+    {
+        gui_on_special(key, x, y);
+    }
+}
+void special_up(int key, int x, int y)
+{
+    if (g_gui_visible)
+    {
+        gui_on_special_up(key, x, y);
+    }
+}
+void mouse_button(int button, int state, int x, int y)
+{
+    if (g_gui_visible)
+    {
+        gui_on_mouse(button, state, x, y);
+    }
+}
+void motion(int x, int y)
+{
+    if (g_gui_visible)
+    {
+        gui_on_motion(x, y);
+    }
+    else
+    {
+        g_camera.on_passive_motion(x, y);
+    }
 }
 void passive_motion(int x, int y)
 {
-    g_camera.on_passive_motion(x, y);
+    if (g_gui_visible)
+    {
+        gui_on_motion(x, y);
+    }
+    else
+    {
+        g_camera.on_passive_motion(x, y);
+    }
 }
 
 void idle()
@@ -92,20 +157,33 @@ void reshape(int w, int h)
     }
     g_camera.set_viewport(w, h);
     g_renderer.resize(w, h);
+    gui_reshape(w, h);
 }
 
 void display()
 {
-    glutSetCursor(GLUT_CURSOR_NONE);
+    glutSetCursor(g_gui_visible ? GLUT_CURSOR_INHERIT : GLUT_CURSOR_NONE);
+
+    mygl::vector3 sun_dir = g_params.sun_dir;
+    // Avoid normalizing a null vector if all sliders sit at zero.
+    if (std::fabs(sun_dir.a_) + std::fabs(sun_dir.b_) + std::fabs(sun_dir.c_)
+        < 1e-4f)
+    {
+        sun_dir = mygl::vector3(0.0f, 1.0f, 0.0f);
+    }
+    sun_dir.normalize();
 
     RenderContext ctx;
     ctx.view = g_camera.view();
     ctx.proj = g_camera.proj();
-    ctx.sun_dir = g_sun_dir;
-    ctx.sun_color = g_sun_color;
+    ctx.sun_dir = sun_dir;
+    ctx.sun_color = g_params.sun_color;
     ctx.cam_pos = g_camera.position();
     ctx.time = glutGet(GLUT_ELAPSED_TIME) / 1000.0f;
+    ctx.params = g_params;
     g_renderer.render(ctx);
+    gui_render(g_params, g_camera, g_gui_visible);
+    glutSwapBuffers();
 }
 
 int main(int argc, char* argv[])
@@ -123,7 +201,7 @@ int main(int argc, char* argv[])
         return 1;
     }
     g_renderer.init(win_w, win_h);
-    g_sun_dir.normalize();
+    gui_init(win_w, win_h);
     trees = make_forest(30, 80.0f);
 
     const std::filesystem::path base =
@@ -269,6 +347,14 @@ int main(int argc, char* argv[])
     glutKeyboardFunc(keyboard_down);
     TEST_OPENGL_ERROR();
     glutKeyboardUpFunc(keyboard_up);
+    TEST_OPENGL_ERROR();
+    glutSpecialFunc(special_down);
+    TEST_OPENGL_ERROR();
+    glutSpecialUpFunc(special_up);
+    TEST_OPENGL_ERROR();
+    glutMouseFunc(mouse_button);
+    TEST_OPENGL_ERROR();
+    glutMotionFunc(motion);
     TEST_OPENGL_ERROR();
     glutPassiveMotionFunc(passive_motion);
     TEST_OPENGL_ERROR();

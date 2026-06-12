@@ -3,6 +3,7 @@
 #include <vector>
 
 #include "matrix4.hh"
+#include "render_params.hh"
 #include "scene.hh"
 #include "shaders.hh"
 
@@ -16,6 +17,7 @@ struct RenderContext
     float time = 0.0f;
     GLuint scene_color_tex = 0;
     GLuint scene_depth_tex = 0;
+    RenderParams params;
 };
 
 class RenderPass

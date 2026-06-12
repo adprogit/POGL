@@ -10,6 +10,8 @@ uniform mat4 model_view_matrix;
 uniform sampler2D texture_sampler;
 uniform sampler2D lighting_sampler;
 uniform mat4 view_matrix;
+uniform float rim_low = 0.6;
+uniform float rim_high = 0.8;
 
 out vec4 output_color;
 
@@ -29,7 +31,7 @@ void main()
     vec3 viewDir = normalize(-frag_position);
 
     float rim = 1.0 - max(dot(N, viewDir), 0.0);
-    float edge = smoothstep(0.6, 0.8, rim);
+    float edge = smoothstep(rim_low, rim_high, rim);
 
     color = mix(color, vec3(0.0), edge);
 

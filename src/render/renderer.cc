@@ -45,7 +45,4 @@ void Renderer::render(RenderContext ctx)
         ctx.scene_depth_tex = fbo_.depth_tex();
         post_pass_->execute(ctx);
     }
-
-    glutSwapBuffers();
-    TEST_OPENGL_ERROR();
 }

@@ -15,6 +15,17 @@ public:
 
     void set_viewport(int w, int h);
 
+    // Disable mouse look while the GUI owns the cursor.
+    void set_look_enabled(bool enabled);
+    float& speed()
+    {
+        return speed_;
+    }
+    float& mouse_speed()
+    {
+        return mouse_speed_;
+    }
+
     const mygl::matrix4& view() const
     {
         return view_;
@@ -49,6 +60,7 @@ private:
     bool key_s_ = false;
     bool key_q_ = false;
     bool key_d_ = false;
+    bool look_enabled_ = true;
 
     mygl::matrix4 view_;
     mygl::matrix4 proj_;
