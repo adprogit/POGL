@@ -25,9 +25,16 @@ endif()
 
 # Dear ImGui (GLUT + OpenGL3 backends) for the real-time parameters GUI.
 include(FetchContent)
-FetchContent_Declare(imgui
-    URL https://github.com/ocornut/imgui/archive/refs/tags/v1.92.8.tar.gz
-    DOWNLOAD_EXTRACT_TIMESTAMP TRUE)
+# DOWNLOAD_EXTRACT_TIMESTAMP was only added in CMake 3.24; passing it on older
+# versions (e.g. 3.22 shipped with Ubuntu 22.04 / WSL) breaks the subbuild.
+if(CMAKE_VERSION VERSION_GREATER_EQUAL 3.24)
+    FetchContent_Declare(imgui
+        URL https://github.com/ocornut/imgui/archive/refs/tags/v1.92.8.tar.gz
+        DOWNLOAD_EXTRACT_TIMESTAMP TRUE)
+else()
+    FetchContent_Declare(imgui
+        URL https://github.com/ocornut/imgui/archive/refs/tags/v1.92.8.tar.gz)
+endif()
 FetchContent_MakeAvailable(imgui)
 
 add_library(imgui STATIC
