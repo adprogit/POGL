@@ -1,4 +1,4 @@
-# POGL — Cel-Shaded Forest Renderer
+#  — Cel-Shaded Forest Renderer —
 
 A real-time OpenGL 4.1 renderer that draws a low-poly pine forest in a
 **cel / toon shading** style: quantized lighting ramps, screen-space ink
